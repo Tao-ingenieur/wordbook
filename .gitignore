@@ -1,0 +1,8 @@
+/dist/
+/repo/dist/
+/repo/src/static/pdf.worker.min.mjs
+**/node_modules/
+**/.pnpm-store/
+**/.DS_Store
+**/*.log
+repo/.cache/

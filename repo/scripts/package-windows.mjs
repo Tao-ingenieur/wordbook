@@ -1,0 +1,24 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
+if (process.platform !== 'win32') throw Error('请在 Windows x64 环境生成便携版');
+const require = createRequire(import.meta.url);
+const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const output = path.resolve(repo, '../dist');
+const electronDir = path.join(path.dirname(require.resolve('electron/package.json')), 'dist');
+await fs.access(path.join(output, 'web/index.html'));
+await fs.access(path.join(electronDir, 'electron.exe'));
+await fs.mkdir(output, { recursive: true });
+// 只复制运行时和应用资源，保留用户已有 input、data 和备份。
+await fs.cp(electronDir, output, { recursive: true });
+await fs.copyFile(path.join(output, 'electron.exe'), path.join(output, 'Wordbook.exe'));
+await fs.unlink(path.join(output, 'electron.exe'));
+const appDir = path.join(output, 'resources/app');
+await fs.mkdir(appDir, { recursive: true });
+await fs.cp(path.join(repo, 'electron'), path.join(appDir, 'electron'), { recursive: true });
+await fs.writeFile(path.join(appDir, 'package.json'), JSON.stringify({ name: 'wordbook', version: '0.1.0', main: 'electron/main.cjs' }, null, 2));
+await fs.cp(path.join(output, 'web'), path.join(output, 'resources/web'), { recursive: true });
+await fs.mkdir(path.join(output, 'input'), { recursive: true });
+await fs.writeFile(path.join(output, '使用说明.txt'), '\ufeff拾词 Wordbook\r\n双击 Wordbook.exe 启动，无需安装。请保留整个文件夹的运行时文件。\r\nExcel/PDF 放在 input 文件夹，在软件中选择“导入单词本 → 扫描 dist/input”。\r\n本地数据位于 data 文件夹；移动软件时请一起移动。\r\n分享程序前请移除自己的 input、data、previews 和备份文件。\r\n');
+console.log('Windows 便携版已生成：' + path.join(output, 'Wordbook.exe'));

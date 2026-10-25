@@ -1,0 +1,28 @@
+{
+  "name": "wordbook", "version": "0.1.0", "private": true, "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "node scripts/uni.mjs h5 --dev",
+    "serve": "node scripts/serve.mjs",
+    "build": "node scripts/uni.mjs h5",
+    "build:weixin": "node scripts/uni.mjs mp-weixin",
+    "build:app": "node scripts/uni.mjs app",
+    "desktop": "electron .",
+    "package:win": "pnpm build && node scripts/package-windows.mjs",
+    "scan": "node scripts/scan.mjs",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "dependencies": {
+    "@dcloudio/uni-app": "3.0.0-5020620260917001",
+    "@dcloudio/uni-app-plus": "3.0.0-5020620260917001",
+    "@dcloudio/uni-components": "3.0.0-5020620260917001",
+    "@dcloudio/uni-h5": "3.0.0-5020620260917001",
+    "@dcloudio/uni-mp-weixin": "3.0.0-5020620260917001",
+    "vue": "3.4.21", "vue-i18n": "9.14.5",
+    "xlsx": "file:vendor/xlsx-0.20.3.tgz", "pdfjs-dist": "5.4.624"
+  },
+  "devDependencies": {
+    "@dcloudio/vite-plugin-uni": "3.0.0-5020620260917001",
+    "vite": "5.2.8", "electron": "39.2.7"
+  }
+}
