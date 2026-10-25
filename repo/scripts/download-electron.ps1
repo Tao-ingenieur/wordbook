@@ -3,7 +3,8 @@ $runtimeVersion = '39.2.7'
 $archiveName = "electron-v$runtimeVersion-win32-x64.zip"
 $archiveUri = "https://github.com/electron/electron/releases/download/v$runtimeVersion/$archiveName"
 $outputRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../dist'))
-$partsRoot = Join-Path $outputRoot '.downloads/electron'
+$downloadRoot = Join-Path $outputRoot '.cache/electron'
+$partsRoot = Join-Path $downloadRoot 'parts'
 New-Item -ItemType Directory -Force $partsRoot | Out-Null
 $probe = Invoke-WebRequest $archiveUri -Method Head -Headers @{ Range = 'bytes=0-0' } -TimeoutSec 30
 if ($probe.StatusCode -ne 206) { throw '官方服务器不支持分段下载' }
@@ -23,7 +24,7 @@ $parts = 0..($partCount - 1) | ForEach-Object -Parallel {
   [PSCustomObject]@{ Index = $partIndex; Path = $file }
 } -ThrottleLimit 16
 if ($parts.Count -ne $partCount) { throw '下载不完整，请重试' }
-$archivePath = Join-Path $outputRoot $archiveName
+$archivePath = Join-Path $downloadRoot $archiveName
 $outputStream = [IO.File]::Create($archivePath)
 try {
   foreach ($part in ($parts | Sort-Object Index)) {

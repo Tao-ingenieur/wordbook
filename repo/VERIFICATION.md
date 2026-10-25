@@ -7,11 +7,13 @@
 - Web 生产构建成功，输出 `dist/web`，包含本地 PDF Worker 和离线资源缓存。
 - 微信小程序构建成功，输出 `dist/weixin`。
 - App 资源构建成功，输出 `dist/app`；这是原生打包资源，不是 APK/IPA。
-- Windows 便携文件夹已生成，入口为 `dist/Wordbook.exe`，无需安装；须保留同目录运行库。
-- `node --test --test-isolation=none tests/*.test.mjs`：13 项通过。
-- Electron 独立测试数据目录下冒烟检查：6 项通过，报告在 `dist/previews/desktop-smoke.json`，界面截图在 `dist/previews/desktop-preview.png`。
+- Windows 便携文件夹已生成，入口为 `dist/desktop/Wordbook.exe`，无需安装；须保留同目录运行库。
+- `node --test --test-isolation=none tests/*.test.mjs`：15 项通过，含开发/发布路径一致性与测试数据隔离检查。
+- Electron 独立测试数据目录下冒烟检查：6 项通过，报告在 `dist/reports/desktop/desktop-smoke.json`，界面截图在 `dist/reports/desktop/desktop-preview.png`。
 
 桌面检查覆盖：preload 与 input 目录扫描、卡片翻转、隐藏后退出队列、恢复生词、Excel 解析和脏数据默认剔除、本地文件协议下双栏 PDF 的 Worker 解析。检查启用 CSP 后再次通过。
+
+目录整理后再次通过桌面检查。现有 `data/` 逐文件 SHA-256 与整理前一致；使用数据副本打开移动后的桌面资源，确认原有单词本与状态仍可读取。App 在 `.cache/` 内临时编译、发布到 `dist/app/` 的流程已实测通过。
 
 浏览器实际交互已验证示例创建、卡片翻转、隐藏、恢复、Excel 文件选择、预览剔除及导入确认。
 

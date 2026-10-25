@@ -9,7 +9,10 @@ const platform = process.argv[2] || 'h5';
 if (!['h5', 'mp-weixin', 'app'].includes(platform)) throw Error('无效的构建目标');
 const dev = process.argv.includes('--dev');
 const folder = { h5: dev ? 'dev-web' : 'web', 'mp-weixin': 'weixin', app: 'app' }[platform];
-const output = path.resolve(repo, '../dist', folder);
+const dist = path.resolve(repo, '../dist');
+const finalOutput = path.join(dist, folder);
+// uni-app 会在输出目录旁生成 .nvue；App 先在缓存目录编译再发布资源。
+const output = platform === 'app' ? path.join(dist, '.cache/app-build/app') : finalOutput;
 if (platform !== 'mp-weixin') {
   const staticDir = path.join(repo, 'src/static');
   await fs.mkdir(staticDir, { recursive: true });
@@ -22,5 +25,11 @@ child.on('error', error => { console.error(error); process.exitCode = 1; });
 const status = await new Promise(resolve => child.on('exit', code => resolve(code ?? 1)));
 if (status !== 0) process.exitCode = status;
 else if (platform === 'h5' && !dev) await import('./cache-web.mjs');
-else if (platform === 'app') await fs.copyFile(path.join(repo, 'src/Info.plist'), path.join(output, 'Info.plist'));
+else if (platform === 'app') {
+  await fs.copyFile(path.join(repo, 'src/Info.plist'), path.join(output, 'Info.plist'));
+  if (path.dirname(finalOutput) !== dist || path.basename(finalOutput) !== 'app') throw Error('App 发布路径异常');
+  await fs.rm(finalOutput, { recursive: true, force: true });
+  await fs.rename(output, finalOutput);
+  console.log('App 资源已发布到：' + finalOutput);
+}
 else if (platform === 'mp-weixin') await fs.rm(path.join(output, 'static/pdf.worker.min.mjs'), { force: true });

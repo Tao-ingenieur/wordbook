@@ -15,13 +15,31 @@ pnpm build                  # dist/web
 pnpm build:weixin            # dist/weixin
 pnpm build:app               # dist/app，供 HBuilderX 后续原生打包
 pnpm desktop                # 先 build，再启动 Windows 桌面窗口
-pnpm package:win            # dist/Wordbook.exe + 同目录便携运行时文件
+pnpm package:win            # dist/desktop/Wordbook.exe + 同目录运行库
 pnpm scan                   # dist/input -> dist/previews/*.preview.json
 ```
 
 `dist/web` 请用静态 HTTP 服务打开，不要直接双击 HTML。开发时可使用 `pnpm dev`；生产构建可使用 `pnpm serve`。HTTPS 或 localhost 首次加载后缓存应用资源，后续可离线打开；各浏览器数据独立。所有文件解析在设备内完成，不上传源文件。
 
-Windows 便携版为完整的 `dist/` 文件夹，双击 `dist/Wordbook.exe` 无需安装，必须保留旁边的 DLL、locales、resources 等运行时文件。同目录 `input/` 放 Excel/PDF；通过“导入单词本 → 扫描 dist/input → 解析并预览”载入。桌面浏览器数据在同目录 `data/` 中，移动程序时应一并移动数据目录。应用资源不夹带个人输入文件；对外分发整个文件夹前请移除自己的 input、data、previews 和备份文件。
+Windows 程序位于 `dist/desktop/`，双击其中的 `Wordbook.exe` 无需安装，保留旁边的 DLL、locales、resources 等运行库。共享输入资料仍放在 `dist/input/`，通过“导入单词本 → 扫描 dist/input → 解析并预览”载入；单词本、隐藏状态和设置仍保存在 `dist/data/`，整理目录不迁移现有数据。手动导出默认保存到 `dist/backups/`，可以自行选择其他位置。
+
+更新程序只更新 `desktop/`，不覆盖个人数据。迁移个人环境时一并复制同级的 `desktop/`、`data/`，如需源资料再复制 `input/`。对外共享只分发 `desktop/`，不附带个人 `data/`、`input/` 或 `backups/`。单独复制到其他位置的 `desktop/` 仍在其上一级创建和读取这些资料目录。
+
+```text
+dist/
+  desktop/       Windows 程序与运行库
+  web/           Web 发布文件
+  weixin/        微信小程序文件
+  app/           iOS/Android 共用原生打包资源
+  input/         Excel/PDF 源资料
+  data/          Windows 本地单词本、隐藏状态、设置（保持原位置）
+  backups/       手动导出备份的默认位置
+  previews/      解析预览 JSON
+  reports/       验证报告和截图
+  .cache/        临时构建、下载和独立测试数据
+```
+
+旧布局迁移：先关闭 Windows 程序，在 `repo/` 用 PowerShell 执行 `./scripts/organize-dist.ps1`，再运行 `pnpm package:win`。整理脚本只移动已知运行库、报告和临时目录，预先检查目标冲突，不移动 `input/` 和 `data/`。桌面检查入口为 `pnpm exec electron scripts/smoke-desktop.cjs`，测试报告位于 `dist/reports/desktop/`，使用 `.cache/` 下的独立数据目录。
 
 ## 导入与更新规则
 

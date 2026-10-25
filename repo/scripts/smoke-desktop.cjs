@@ -3,13 +3,14 @@ const { app } = require('electron');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const assert = require('node:assert/strict');
-const { ready, getWindow } = require('../electron/main.cjs');
-const output = path.resolve(__dirname, '../../dist/previews');
+const { ready, getWindow, paths } = require('../electron/main.cjs');
+const output = paths.reports;
 const wait = () => new Promise(resolve => setTimeout(resolve, 150));
 const checks = [];
 async function run() {
   await ready;
   const win = getWindow(), web = win.webContents;
+  assert.equal(paths.userData, path.resolve(__dirname, '../../dist/.cache/desktop-smoke-data'));
   const logs = [];
   web.on('console-message', (_event, _level, message) => logs.push(message));
   const text = () => web.executeJavaScript('document.body.innerText');
