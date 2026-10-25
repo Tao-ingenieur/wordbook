@@ -29,6 +29,17 @@ async function run() {
   assert.match(await text(), /The cherry trees bloom in spring/); checks.push('卡片翻转显示词义、音标、例句');
   await click('✓ 已记住，隐藏'); assert.match(await text(), /1 \/ 5/); checks.push('隐藏当前单词后轮询减为 5 词');
   await click('隐藏词 1'); await click('恢复为生词'); assert.match(await text(), /还没有隐藏的单词/); checks.push('隐藏词恢复生词');
+  const card = () => web.executeJavaScript('({word:document.querySelector(".card-word").textContent,position:document.querySelector(".study-controls>.muted").textContent})');
+  await click('← 返回背诵'); await click('下一个 →'); const alpha = await card();
+  await click('← 我的单词本'); await click('继续背诵 →'); assert.deepEqual(await card(), alpha);
+  await click('⇄ 完全乱序'); await click('下一个 →'); const random = await card();
+  await click('A–Z 字母顺序'); assert.deepEqual(await card(), alpha);
+  await click('⇄ 完全乱序'); assert.deepEqual(await card(), random);
+  checks.push('离开再进入续背，两种排序分别保留位置与乱序队列');
+  await web.reload(); await new Promise(resolve => web.once('did-finish-load', resolve));
+  await click('继续背诵 →'); assert.deepEqual(await card(), random);
+  assert.equal(await web.executeJavaScript('document.querySelector(".study-controls .selected").textContent.trim()'), '⇄ 完全乱序');
+  checks.push('重新加载后恢复上次排序与当前卡片');
   await click('＋　导入单词本');
   async function importFixture(name) {
     const bytes = Array.from(await fs.readFile(path.resolve(__dirname, '../../dist/input', name)));

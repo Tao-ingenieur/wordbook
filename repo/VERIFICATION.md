@@ -1,6 +1,6 @@
 # 一期验证记录
 
-验证日期：2026-10-25（Asia/Shanghai）。
+验证日期：2026-10-26（Asia/Shanghai）。
 
 ## 已完成
 
@@ -8,10 +8,12 @@
 - 微信小程序构建成功，输出 `dist/weixin`。
 - App 资源构建成功，输出 `dist/app`；这是原生打包资源，不是 APK/IPA。
 - Windows 便携文件夹已生成，入口为 `dist/desktop/Wordbook.exe`，无需安装；须保留同目录运行库。
-- `node --test --test-isolation=none tests/*.test.mjs`：15 项通过，含开发/发布路径一致性与测试数据隔离检查。
-- Electron 独立测试数据目录下冒烟检查：6 项通过，报告在 `dist/reports/desktop/desktop-smoke.json`，界面截图在 `dist/reports/desktop/desktop-preview.png`。
+- `node --test --test-isolation=none tests/*.test.mjs`：24 项通过，含开发/发布路径一致性、测试数据隔离、续背和多本备份检查。
+- Electron 独立测试数据目录下冒烟检查：8 项通过，报告在 `dist/reports/desktop/desktop-smoke.json`，界面截图在 `dist/reports/desktop/desktop-preview.png`。
 
 桌面检查覆盖：preload 与 input 目录扫描、卡片翻转、隐藏后退出队列、恢复生词、Excel 解析和脏数据默认剔除、本地文件协议下双栏 PDF 的 Worker 解析。检查启用 CSP 后再次通过。
+
+续背验证：桌面离开再进入、切换排序、页面重载后恢复当前词与位置；模型检查每本两套进度独立、乱序队列持久化、隐藏/恢复/覆盖后的队列修复、显式重开、复制本进度独立以及旧备份兼容。三个单词本导出到一个 JSON 再合并导入空设备数据，确认仍为三个独立单词本且各自进度与隐藏状态保留。测试不读写用户的 `dist/data/`。
 
 目录整理后再次通过桌面检查。现有 `data/` 逐文件 SHA-256 与整理前一致；使用数据副本打开移动后的桌面资源，确认原有单词本与状态仍可读取。App 在 `.cache/` 内临时编译、发布到 `dist/app/` 的流程已实测通过。
 

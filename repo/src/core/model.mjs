@@ -16,14 +16,14 @@ export function importBook(state, name, sourceKey, entries) {
     const before = previous.get(keyOf(entry.word));
     if (before) { entry.id = before.id; entry.status = before.status; }
   }
-  const book = { id: old?.id || uid(), name: old?.name || name.trim(), sourceKey, entries: clean, updatedAt: new Date().toISOString() };
+  const book = reconcileStudy({ id: old?.id || uid(), name: old?.name || name.trim(), sourceKey, entries: clean, updatedAt: new Date().toISOString(), study: old?.study });
   const books = old ? state.books.map(b => b.id === old.id ? book : b) : [...state.books, book];
   return { ...state, books };
 }
 export function copyBook(state, id) {
   const source = state.books.find(b => b.id === id);
   if (!source) throw Error('单词本不存在');
-  const book = { ...source, id: uid(), sourceKey: `copy:${uid()}`, name: `${source.name} · 副本`, updatedAt: new Date().toISOString(), entries: source.entries.map(e => ({ ...e, id: uid() })) };
+  const book = reconcileStudy({ ...source, id: uid(), sourceKey: `copy:${uid()}`, name: `${source.name} · 副本`, updatedAt: new Date().toISOString(), entries: source.entries.map(e => ({ ...e, id: uid() })) });
   return { ...state, books: [...state.books, book] };
 }
 export function makeQueue(book, mode = 'alpha', random = Math.random) {
@@ -31,6 +31,62 @@ export function makeQueue(book, mode = 'alpha', random = Math.random) {
   if (mode === 'alpha') return entries.sort((a, b) => a.word.localeCompare(b.word, 'en', { sensitivity: 'base' }));
   for (let i = entries.length - 1; i > 0; i--) { const j = Math.floor(random() * (i + 1)); [entries[i], entries[j]] = [entries[j], entries[i]]; }
   return entries;
+}
+
+// Persist word keys: backup validation rebuilds entry ids, and source imports may change spelling case.
+function repairSession(book, mode, saved, random = Math.random) {
+  const active = book.entries.filter(e => e.status !== 'hidden');
+  const available = new Set(active.map(e => keyOf(e.word)));
+  const current = typeof saved.current === 'string' ? keyOf(saved.current) : null;
+  if (mode === 'alpha') {
+    const queue = makeQueue(book).map(e => keyOf(e.word));
+    const next = available.has(current) ? current : queue.find(key => current && key.localeCompare(current, 'en', { sensitivity: 'base' }) > 0);
+    return { queue, current: next || queue[0] || null };
+  }
+  const seen = new Set();
+  const previous = (Array.isArray(saved.queue) ? saved.queue : []).filter(key => typeof key === 'string').map(keyOf).filter(key => key && !seen.has(key) && seen.add(key));
+  const queue = previous.filter(key => available.has(key));
+  // Append restored/new words without reshuffling the saved part of the round.
+  const missing = active.filter(entry => !seen.has(keyOf(entry.word)));
+  queue.push(...makeQueue({ entries: missing }, 'random', random).map(e => keyOf(e.word)));
+  let next = available.has(current) ? current : null;
+  const position = previous.indexOf(current);
+  if (!next && position >= 0) {
+    for (let offset = 1; offset <= previous.length; offset++) {
+      const candidate = previous[(position + offset) % previous.length];
+      if (available.has(candidate)) { next = candidate; break; }
+    }
+  }
+  return { queue, current: next || queue[0] || null };
+}
+
+export function reconcileStudy(book) {
+  const raw = book.study && typeof book.study === 'object' ? book.study : {};
+  const study = { mode: raw.mode === 'random' ? 'random' : 'alpha' };
+  for (const mode of ['alpha', 'random']) {
+    if (!raw[mode] || typeof raw[mode] !== 'object' || Array.isArray(raw[mode])) continue;
+    const session = repairSession(book, mode, raw[mode]);
+    study[mode] = mode === 'alpha' ? { current: session.current } : session;
+  }
+  return { ...book, study };
+}
+
+export function studySession(book, mode = book.study?.mode, { restart = false, random = Math.random } = {}) {
+  mode = mode === 'random' ? 'random' : 'alpha';
+  const saved = !restart && book.study?.[mode];
+  const session = saved && typeof saved === 'object' && !Array.isArray(saved)
+    ? repairSession(book, mode, saved, random)
+    : { queue: makeQueue(book, mode, random).map(e => keyOf(e.word)) };
+  const cursor = Math.max(0, session.queue.indexOf(session.current));
+  return { mode, queue: session.queue, cursor };
+}
+
+export function rememberStudy(book, session) {
+  const mode = session.mode === 'random' ? 'random' : 'alpha';
+  const repaired = repairSession(book, mode, { queue: session.queue, current: session.queue[session.cursor] || null });
+  const study = { ...reconcileStudy(book).study, mode };
+  study[mode] = mode === 'alpha' ? { current: repaired.current } : repaired;
+  return { ...book, study };
 }
 export function validateBackup(value) {
   if (!value || value.version !== 1 || !Array.isArray(value.books)) throw Error('不是支持的 v1 单词本文件');
@@ -44,7 +100,7 @@ export function validateBackup(value) {
       words.add(keyOf(e.word));
       return cleanEntry(e);
     });
-    return { id: b.id, name: b.name.trim(), sourceKey: b.sourceKey, entries, updatedAt: typeof b.updatedAt === 'string' ? b.updatedAt : new Date().toISOString() };
+    return reconcileStudy({ id: b.id, name: b.name.trim(), sourceKey: b.sourceKey, entries, updatedAt: typeof b.updatedAt === 'string' ? b.updatedAt : new Date().toISOString(), study: b.study });
   });
   return { version: 1, books, settings: { theme: value.settings?.theme === 'dark' ? 'dark' : 'light', fontSize: Math.max(14, Math.min(28, Number(value.settings?.fontSize) || 18)) } };
 }
