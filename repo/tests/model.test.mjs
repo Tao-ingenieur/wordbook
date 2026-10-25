@@ -43,7 +43,7 @@ test('拒绝损坏备份与重复词，而非静默丢数据', () => {
   assert.throws(() => validateBackup(state), /重复/);
 });
 test('识别中英文乱序表头、无表头四列、多余空行', () => {
-  assert.deepEqual(rowsToEntries([['释义', '单词', '例句', '音标'], ['苹果', 'apple', 'An apple.', '/a/'], []], 'Sheet1').map(({ location, ...e }) => e), [{ word: 'apple', phonetic: '/a/', meaning: '苹果', example: 'An apple.' }]);
+  assert.deepEqual(rowsToEntries([['释义', '单词', '例句', '音标'], ['苹果', 'apple', 'An apple.', '/a/'], []], 'Sheet1').map(({ location: _location, ...e }) => e), [{ word: 'apple', phonetic: '/a/', meaning: '苹果', example: 'An apple.' }]);
   assert.equal(rowsToEntries([['bee', '/biː/', '蜜蜂', 'A bee.']])[0].meaning, '蜜蜂');
 });
 test('PDF 文本行与脏数据检测', () => {

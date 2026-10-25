@@ -13,8 +13,7 @@ export default {
 };
 </script>
 <script module="picker" lang="renderjs">
-import * as XLSX from 'xlsx';
-import { rowsToEntries } from '../core/parse.mjs';
+import { excelToEntries } from '../core/excel.mjs';
 import { parseBrowserPdf } from '../platform/browser-pdf.js';
 export default {
   methods: {
@@ -31,8 +30,7 @@ export default {
           const bytes = await file.arrayBuffer();
           let entries;
           if (/\.(xlsx?|csv)$/i.test(file.name)) {
-            const workbook = XLSX.read(new Uint8Array(bytes), { type: 'array' });
-            entries = workbook.SheetNames.flatMap(sheet => rowsToEntries(XLSX.utils.sheet_to_json(workbook.Sheets[sheet], { header: 1, defval: '', raw: false }), sheet));
+            entries = excelToEntries(bytes);
           } else if (/\.pdf$/i.test(file.name)) {
             entries = await parseBrowserPdf(bytes);
           } else throw Error('不支持此文件类型');

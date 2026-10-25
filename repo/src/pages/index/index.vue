@@ -54,7 +54,10 @@ import { ref, computed, nextTick } from 'vue';
 import { emptyState, importBook, copyBook, makeQueue, validateBackup, mergeBackup, keyOf } from '../../core/model.mjs';
 import { reviewEntries } from '../../core/parse.mjs';
 import { loadState, saveState, rawState } from '../../platform/storage.js';
-import { pickFile, exportFile, desktop, readDocument } from '../../platform/files.js';
+import { exportFile, desktop, readDocument } from '../../platform/files.js';
+// #ifndef APP-PLUS
+import { pickFile } from '../../platform/files.js';
+// #endif
 import { speak } from '../../platform/speech.js';
 // #ifdef APP-PLUS
 import AppFilePicker from '../../components/app-file-picker.vue';
@@ -102,7 +105,9 @@ function hideCurrent() {
 function restore(id) { updateBook(b => { b.entries.find(e => e.id === id).status = 'new'; return b; }); }
 function restoreAll() { updateBook(b => { b.entries.forEach(e => e.status = 'new'); return b; }); }
 function pronounce(word) { try { speak(word); } catch (e) { toast(e.message); } }
+// #ifndef APP-PLUS
 async function choose() { try { busy.value = true; const value = await pickFile(); if (value) acceptDocument(value); } catch (e) { toast(e.message); } finally { busy.value = false; } }
+// #endif
 function acceptDocument(value) {
   previewPage.value = 1;
   if (value?.format === 'wordbook-preview' || (value?.sourceKey && value?.entries)) {
@@ -110,7 +115,9 @@ function acceptDocument(value) {
     preview.value = { ...value, entries: reviewEntries(value.entries.map(e => ({ word: e.word, meaning: String(e.meaning || ''), phonetic: String(e.phonetic || ''), example: String(e.example || ''), location: e.location || '' }))) };
   } else restoreDraft.value = validateBackup(value);
 }
+// #ifdef APP-PLUS
 function onAppDocument(value) { try { acceptDocument(value); } catch (e) { toast(e.message); } }
+// #endif
 function selectPreview(selected) { preview.value.entries.forEach(row => row.selected = selected); }
 function commitImport() {
   try {

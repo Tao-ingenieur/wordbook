@@ -1,4 +1,6 @@
+// #ifdef APP-PLUS
 let iosSynth;
+// #endif
 export function speak(word) {
   // #ifdef H5
   if (!globalThis.speechSynthesis) throw Error('此浏览器没有语音朗读能力，请使用系统自带浏览器或桌面版');

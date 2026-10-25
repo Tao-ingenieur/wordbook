@@ -4,7 +4,8 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import * as XLSX from 'xlsx';
-import { parseFile, pdfLines } from '../src/core/node-parser.mjs';
+import { parseFile } from '../src/core/node-parser.mjs';
+import { pdfLines } from '../src/core/pdf-lines.mjs';
 
 test('真实 Excel 多工作表解析，保持一个文件一个单词本', async () => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'wordbook-test-'));

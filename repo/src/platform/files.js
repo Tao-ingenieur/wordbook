@@ -1,5 +1,4 @@
-import * as XLSX from 'xlsx';
-import { rowsToEntries } from '../core/parse.mjs';
+import { excelToEntries } from '../core/excel.mjs';
 // #ifdef H5
 import { parseBrowserPdf } from './browser-pdf.js';
 // #endif
@@ -12,8 +11,7 @@ export async function readDocument(name, bytes) {
   if (/\.json$/i.test(name)) return JSON.parse(new TextDecoder().decode(bytes));
   let entries;
   if (/\.(xlsx?|csv)$/i.test(name)) {
-    const workbook = XLSX.read(new Uint8Array(bytes), { type: 'array' });
-    entries = workbook.SheetNames.flatMap(sheet => rowsToEntries(XLSX.utils.sheet_to_json(workbook.Sheets[sheet], { header: 1, defval: '', raw: false }), sheet));
+    entries = excelToEntries(bytes);
   } else if (/\.pdf$/i.test(name)) {
     // #ifdef H5
     entries = await parseBrowserPdf(bytes);
@@ -24,6 +22,7 @@ export async function readDocument(name, bytes) {
   } else throw Error('请选择 Excel、CSV、PDF 或单词本 JSON 文件');
   return { name: name.replace(/\.[^.]+$/, ''), sourceKey: `file:${name.toLowerCase()}`, entries };
 }
+// #ifndef APP-PLUS
 export function pickFile() {
   // #ifdef H5
   return new Promise((resolve, reject) => {
@@ -43,17 +42,14 @@ export function pickFile() {
     wx.chooseMessageFile({ count: 1, type: 'file', extension: ['xlsx', 'xls', 'csv', 'json'], success: async result => {
       try {
         const file = result.tempFiles[0];
-        const bytes = wx.getFileSystemManager().readFileSync(file.path);
         if (/\.json$/i.test(file.name)) resolve(JSON.parse(wx.getFileSystemManager().readFileSync(file.path, 'utf8')));
-        else resolve(await readDocument(file.name, bytes));
+        else resolve(await readDocument(file.name, wx.getFileSystemManager().readFileSync(file.path)));
       } catch (error) { reject(error); }
     }, fail: error => error.errMsg?.includes('cancel') ? resolve(null) : reject(Error(error.errMsg)) });
   });
   // #endif
-  // #ifdef APP-PLUS
-  return Promise.reject(Error('App 端请使用“粘贴恢复”，粘贴电脑导出的单词本 JSON；原生文件选择器待接入。'));
-  // #endif
 }
+// #endif
 export async function exportFile(name, value) {
   const text = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
   // #ifdef H5

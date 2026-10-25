@@ -1,3 +1,17 @@
+import { textToEntries } from './parse.mjs';
+
+export async function pdfToEntries(pdf) {
+  try {
+    const lines = [];
+    for (let n = 1; n <= pdf.numPages; n++) {
+      const content = await (await pdf.getPage(n)).getTextContent();
+      lines.push(...pdfLines(content.items));
+    }
+    if (!lines.join('').trim()) throw Error('PDF 没有文本层，请先 OCR 后重新导入');
+    return textToEntries(lines.join('\n'));
+  } finally { await pdf.destroy(); }
+}
+
 export function pdfLines(items, options = {}) {
   const content = items.filter(i => i.str && i.str.trim());
   // 双栏讲义：两个反复出现的英文行首，且第二个接近页面中线。

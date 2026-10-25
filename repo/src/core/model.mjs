@@ -1,7 +1,7 @@
 export const keyOf = word => String(word ?? '').normalize('NFKC').trim().toLocaleLowerCase('en');
-export const uid = () => globalThis.crypto?.randomUUID?.() || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+const uid = () => globalThis.crypto?.randomUUID?.() || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 export const emptyState = () => ({ version: 1, books: [], settings: { theme: 'light', fontSize: 18 } });
-export function cleanEntry(raw) {
+function cleanEntry(raw) {
   const word = String(raw.word ?? '').trim();
   return { id: uid(), word, phonetic: String(raw.phonetic ?? '').trim(), meaning: String(raw.meaning ?? '').trim(), example: String(raw.example ?? '').trim(), status: raw.status === 'hidden' ? 'hidden' : 'new' };
 }

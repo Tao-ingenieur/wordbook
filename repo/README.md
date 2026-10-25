@@ -41,6 +41,8 @@ dist/
 
 旧布局迁移：先关闭 Windows 程序，在 `repo/` 用 PowerShell 执行 `./scripts/organize-dist.ps1`，再运行 `pnpm package:win`。整理脚本只移动已知运行库、报告和临时目录，预先检查目标冲突，不移动 `input/` 和 `data/`。桌面检查入口为 `pnpm exec electron scripts/smoke-desktop.cjs`，测试报告位于 `dist/reports/desktop/`，使用 `.cache/` 下的独立数据目录。
 
+其他维护入口：`node scripts/create-sample.mjs` 生成含脏数据的导入示例；`./scripts/download-electron.ps1` 在常规安装下载受限时获取并校验 Electron 官方发行包（PowerShell 7）；`scripts/configure-weixin.mjs` 用于配置实际 AppID 和朗读插件。上述脚本不在每次启动时执行，但用于开发、迁移或发布，属于保留的维护工具。
+
 ## 导入与更新规则
 
 - 一个 Excel/PDF 文件生成一本单词本。Excel 读取所有工作表，推荐表头 `单词、音标、释义、例句`，允许中英文表头和不同列顺序；无表头时按上述四列读取。CSV 也可使用。
