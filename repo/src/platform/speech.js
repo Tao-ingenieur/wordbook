@@ -1,3 +1,4 @@
+import { t } from '../i18n/index.js';
 // #ifdef APP-PLUS
 let iosSynth;
 // #endif
@@ -47,7 +48,7 @@ export function speak(word, { rate = 0.85 } = {}) {
     const Locale = plus.android.importClass('java.util.Locale');
     let tts;
     const listener = plus.android.implements('android.speech.tts.TextToSpeech$OnInitListener', { onInit: status => {
-      if (status !== 0) { uni.showToast({ title: '系统语音初始化失败', icon: 'none' }); return; }
+      if (status !== 0) { uni.showToast({ title: t("系统语音初始化失败"), icon: 'none' }); return; }
       tts.setLanguage(Locale.US); tts.speak(word, 0, null); setTimeout(() => tts.shutdown(), 15000);
     } });
     tts = new TTS(plus.android.runtimeMainActivity(), listener); return;
@@ -68,10 +69,10 @@ export function speak(word, { rate = 0.85 } = {}) {
       const audio = wx.createInnerAudioContext();
       audio.src = result.filename;
       audio.onEnded(() => audio.destroy());
-      audio.onError(() => { audio.destroy(); uni.showToast({ title: '发音播放失败，请检查网络', icon: 'none' }); });
+      audio.onError(() => { audio.destroy(); uni.showToast({ title: t("发音播放失败，请检查网络"), icon: 'none' }); });
       audio.play();
     },
-    fail: () => uni.showToast({ title: '语音合成失败，请检查插件授权和网络', icon: 'none' })
+    fail: () => uni.showToast({ title: t("语音合成失败，请检查插件授权和网络"), icon: 'none' })
   });
   return;
   // #endif

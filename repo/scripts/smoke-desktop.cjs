@@ -92,7 +92,7 @@ async function run() {
     const bytes = Array.from(await fs.readFile(path.resolve(__dirname, '../../dist/input', name)));
     // 开发测试注入本地 File 对象，避免自动化弹出操作系统选择器。
     await web.executeJavaScript(`(() => { document.querySelector('.import-panel uni-button').click(); const input=document.querySelector('input[type=file]');const dt=new DataTransfer();dt.items.add(new File([new Uint8Array(${JSON.stringify(bytes)})],${JSON.stringify(name)}));input.files=dt.files;input.dispatchEvent(new Event('change'));})()`);
-    for (let i = 0; i < 100; i++) { await wait(); if ((await text()).includes('检查导入内容')) return; }
+    for (let i = 0; i < 100; i++) { await wait(); if (/检查导入内容|Review import/.test(await text())) return; }
     throw Error('文件预览未出现：' + name + '\n' + (await text()).slice(-500));
   }
   await importFixture('导入示例.xlsx');
@@ -108,6 +108,7 @@ async function run() {
   await fs.mkdir(output, { recursive: true });
   await fs.writeFile(path.join(output, 'desktop-preview.png'), (await web.capturePage()).toPNG());
   const help = Menu.getApplicationMenu().items.find(item => item.role === 'help');
+  assert.equal(help.label, '帮助');
   assert.ok(help?.submenu.items.find(item => item.label === '关于拾词'));
   const originalDialog = dialog.showMessageBox;
   let about;
@@ -122,6 +123,35 @@ async function run() {
   assert.ok(await web.executeJavaScript('document.documentElement.scrollWidth <= window.innerWidth'));
   await fs.writeFile(path.join(output, 'about-mobile.png'), (await web.capturePage()).toPNG());
   checks.push('帮助页在桌面和手机宽度显示版本与构建号，无横向溢出');
+  assert.equal(await web.executeJavaScript('document.querySelector(".sidebar-bottom .version")'), null);
+  await click('⚙　基础设置');
+  const storedBooks = await web.executeJavaScript('localStorage.getItem("wordbook.v1")');
+  await click('English');
+  assert.match(await text(), /Interface language/);
+  assert.equal(Menu.getApplicationMenu().items.find(item => item.role === 'help').label, 'Help');
+  assert.equal(await web.executeJavaScript('localStorage.getItem("wordbook.v1")'), storedBooks);
+  await web.reload(); await new Promise(resolve => web.once('did-finish-load', resolve)); await wait();
+  assert.match(await text(), /My wordbooks/);
+  await click('Help'); assert.ok((await text()).includes('Version ' + version));
+  assert.ok(!(await text()).includes('帮助与关于'));
+  assert.ok(await web.executeJavaScript('document.documentElement.scrollWidth <= window.innerWidth'));
+  await fs.writeFile(path.join(output, 'about-mobile-en.png'), (await web.capturePage()).toPNG());
+  checks.push('中英切换同步 Windows 菜单，重载记住语言，单词本数据不变且角落无版本号');
+  await click('⚙ Settings'); await click('Export all data');
+  await click('＋ Import'); await click('Paste JSON');
+  await fill('.paste-area textarea', exported); await click('Review content');
+  assert.match(await text(), /Compare & restore backup/);
+  assert.match(await text(), /Keep local/);
+  await web.executeJavaScript(`document.querySelector('[aria-label="Cancel backup restore"]').click()`); await wait();
+  await importFixture('导入示例.xlsx');
+  assert.match(await text(), /Missing definition|Duplicate word/);
+  await web.executeJavaScript(`document.querySelector('[aria-label="Close preview"]').click()`); await wait();
+  await click('▤ My books'); await click('Find & edit words');
+  assert.ok(await web.executeJavaScript(`!!document.querySelector('uni-input[aria-label="Search words or definitions"]')`));
+  await click('Add word'); await click('Save word'); assert.match(await text(), /Word cannot be empty/);
+  await web.executeJavaScript(`document.querySelector('[aria-label="Close word manager"]').click()`); await wait();
+  await click('⚙ Settings'); await click('中文'); assert.match(await text(), /基础设置/);
+  checks.push('英文导入警告、备份比较、词条编辑错误及切回中文正常');
   await fs.writeFile(path.join(output, 'desktop-smoke.json'), JSON.stringify({ passed: true, checks, logs }, null, 2));
   console.log(JSON.stringify({ passed: true, checks }, null, 2));
   app.quit();

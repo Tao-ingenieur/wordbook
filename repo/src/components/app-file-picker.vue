@@ -1,11 +1,13 @@
 <template>
-  <view><button class="primary" :disabled="busy" @click="request++">{{ busy ? '正在解析…' : '选择文件' }}</button><view :request="request" :change:request="picker.open" /></view>
+  <view><button class="primary" :disabled="busy" @click="request++">{{ busy ? t("正在解析…") : t("选择文件") }}</button><view :request="request" :change:request="picker.open" /></view>
 </template>
 <script>
+import { t } from '../i18n/index.js';
+
 export default {
   props: { busy: Boolean }, emits: ['document', 'error', 'busy'],
   data: () => ({ request: 0 }),
-  methods: {
+  methods: { t,
     picked(value) { this.$emit('busy', false); this.$emit('document', value); },
     failed(message) { this.$emit('busy', false); this.$emit('error', message); },
     started() { this.$emit('busy', true); }

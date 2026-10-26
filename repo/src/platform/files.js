@@ -1,3 +1,4 @@
+import { t, showModal } from '../i18n/index.js';
 import { excelToEntries } from '../core/excel.mjs';
 // #ifdef H5
 import { parseBrowserPdf } from './browser-pdf.js';
@@ -75,7 +76,7 @@ export async function exportFile(name, value) {
     let truncated = false;
     writer.onwrite = () => {
       if (!truncated) { truncated = true; writer.seek(0); writer.write(text); return; }
-      uni.showModal({ title: '备份已导出', content: '请到“文件”App → 我的 iPhone → 拾词中查找 ' + name, showCancel: false }); resolve(true);
+      showModal({ title: t("备份已导出"), content: t('请到“文件”App → 我的 iPhone → 拾词中查找 ') + name, showCancel: false }); resolve(true);
     };
     writer.truncate(0);
   }, reject), reject), reject));

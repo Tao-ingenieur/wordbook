@@ -1,5 +1,5 @@
 {
-  "name": "wordbook", "version": "0.2.1", "private": true, "type": "module",
+  "name": "wordbook", "version": "0.2.2", "private": true, "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "node scripts/uni.mjs h5 --dev",

@@ -182,6 +182,20 @@ try:
     assert 'versionName=' + manifest['versionName'] in installed
     assert 'versionCode=' + manifest['versionCode'] + ' ' in installed
     checks.append('Help shows version and build number matching the installed APK')
+    find('基础设置', True)
+    find('English', True, exact=True)
+    find('Interface language')
+    adb('shell', 'am', 'force-stop', package)
+    adb('shell', 'am', 'start', '-n', component)
+    find('My wordbooks')
+    find('Help', True, exact=True)
+    find('Version ' + manifest['versionName'])
+    find('Build ' + manifest['versionCode'])
+    (report / 'screen-en.png').write_bytes(adb('exec-out', 'screencap', '-p'))
+    find('Settings', True)
+    find('中文', True, exact=True)
+    find('基础设置')
+    checks.append('English interface persists after restart; Help and settings switch back to Chinese')
     (report / 'screen.png').write_bytes(adb('exec-out', 'screencap', '-p'))
     (report / 'smoke.json').write_text(json.dumps({'passed': True, 'checks': checks}, indent=2), encoding='utf-8')
 except Exception as error:

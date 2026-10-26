@@ -15,15 +15,25 @@ const ready = app.whenReady().then(async () => {
   win = new BrowserWindow({ width: 1280, height: 860, minWidth: 380, minHeight: 600, show: !smoke, title: '拾词 · Wordbook', webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, offscreen: smoke, backgroundThrottling: !smoke } });
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', event => event.preventDefault());
-  Menu.setApplicationMenu(Menu.buildFromTemplate([
-    { label: '文件', submenu: [{ role: 'quit', label: '退出' }] },
-    { label: '编辑', submenu: [{ role: 'undo' }, { role: 'redo' }, { type: 'separator' }, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }] },
-    { label: '视图', submenu: [{ role: 'reload' }, { role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' }, { role: 'togglefullscreen' }] },
-    { role: 'help', label: '帮助（Help）', submenu: [{ label: '关于拾词', click: () => dialog.showMessageBox(win, {
-      type: 'info', title: '关于拾词', message: '拾词 · Wordbook',
-      detail: `版本 ${appVersion}\n\n本地单词本，支持手动备份和恢复。\n使用说明请点击应用右上角“帮助”。`, buttons: ['确定']
-    }) }] }
-  ]));
+  let language = 'zh';
+  function applyLanguage(value) {
+    language = value === 'en' ? 'en' : 'zh';
+    const en = language === 'en';
+    win.setTitle(en ? 'Wordbook' : '拾词 · Wordbook');
+    const label = (zh, english) => en ? english : zh;
+    const role = (name, zh, english) => ({ role: name, label: label(zh, english) });
+    Menu.setApplicationMenu(Menu.buildFromTemplate([
+      { label: label('文件', 'File'), submenu: [role('quit', '退出', 'Quit')] },
+      { label: label('编辑', 'Edit'), submenu: [role('undo', '撤销', 'Undo'), role('redo', '重做', 'Redo'), { type: 'separator' }, role('cut', '剪切', 'Cut'), role('copy', '复制', 'Copy'), role('paste', '粘贴', 'Paste'), role('selectAll', '全选', 'Select all')] },
+      { label: label('视图', 'View'), submenu: [role('reload', '重新加载', 'Reload'), role('resetZoom', '实际大小', 'Actual size'), role('zoomIn', '放大', 'Zoom in'), role('zoomOut', '缩小', 'Zoom out'), role('togglefullscreen', '切换全屏', 'Toggle full screen')] },
+      { role: 'help', label: label('帮助', 'Help'), submenu: [{ label: label('关于拾词', 'About Wordbook'), click: () => dialog.showMessageBox(win, {
+        type: 'info', title: label('关于拾词', 'About Wordbook'), message: label('拾词 · Wordbook', 'Wordbook'),
+        detail: label('版本 ', 'Version ') + appVersion + '\n\n' + label('本地单词本，支持手动备份和恢复。\n使用说明请点击应用右上角“帮助”。', 'Local wordbooks with manual backup and restore.\nSelect Help in the app for instructions.'), buttons: [label('确定', 'OK')]
+      }) }] }
+    ]));
+  }
+  applyLanguage('zh');
+  ipcMain.handle('ui:language', (_event, value) => { applyLanguage(value); return true; });
   ipcMain.handle('input:list', async () => (await fs.readdir(input, { withFileTypes: true })).filter(e => e.isFile() && /\.(xlsx?|csv|pdf)$/i.test(e.name)).map(e => e.name));
   ipcMain.handle('input:read', async (_event, name) => {
     if (typeof name !== 'string' || path.basename(name) !== name || !/\.(xlsx?|csv|pdf)$/i.test(name)) throw Error('无效的输入文件');
@@ -34,7 +44,7 @@ const ready = app.whenReady().then(async () => {
   ipcMain.handle('backup:save', async (_event, name, text) => {
     if (typeof text !== 'string' || text.length > 100 * 1024 * 1024) throw Error('导出数据过大');
     await fs.mkdir(paths.backups, { recursive: true });
-    const result = await dialog.showSaveDialog(win, { defaultPath: path.join(paths.backups, path.basename(name)), filters: [{ name: '单词本备份', extensions: ['json'] }] });
+    const result = await dialog.showSaveDialog(win, { defaultPath: path.join(paths.backups, path.basename(name)), filters: [{ name: language === 'en' ? 'Wordbook backup' : '单词本备份', extensions: ['json'] }] });
     if (!result.canceled) await fs.writeFile(result.filePath, text, 'utf8');
     return !result.canceled;
   });
