@@ -22,11 +22,28 @@ const output = path.join(dist, 'android');
 await fs.mkdir(output, { recursive: true });
 const apk = path.join(output, 'Wordbook-debug.apk');
 await fs.copyFile(path.join(dist, '.cache/android/app/outputs/apk/debug/app-debug.apk'), apk);
+const sdk = process.env.ANDROID_HOME || process.env.ANDROID_SDK_ROOT;
+if (!sdk) throw Error('Set ANDROID_HOME or ANDROID_SDK_ROOT to verify the APK signature');
+const java = process.env.JAVA_HOME ? path.join(process.env.JAVA_HOME, 'bin', process.platform === 'win32' ? 'java.exe' : 'java') : 'java';
+async function certificate(file) {
+  const child = spawn(java, ['-jar', path.join(sdk, 'build-tools/35.0.0/lib/apksigner.jar'), 'verify', '--print-certs', file], { stdio: ['ignore', 'pipe', 'pipe'] });
+  let out = '', err = ''; child.stdout.on('data', data => { out += data; }); child.stderr.on('data', data => { err += data; });
+  const status = await new Promise((resolve, reject) => { child.on('error', reject); child.on('exit', resolve); });
+  const digest = out.match(/Signer #1 certificate SHA-256 digest: ([0-9a-f]+)/i)?.[1];
+  if (status !== 0 || !digest) throw Error('APK signature verification failed: ' + err);
+  return digest.toLowerCase();
+}
+const signer = await certificate(apk);
+const baseline = path.join(dist, '.cache/android-baseline/Wordbook-debug.apk');
+try {
+  await fs.access(baseline);
+  if (signer !== await certificate(baseline)) throw Error('Signing identity differs from the installed APK. Restore the existing signing key; do not uninstall or silently rotate the key.');
+} catch (error) { if (error.code !== 'ENOENT') throw error; }
 const hash = createHash('sha256').update(await fs.readFile(apk)).digest('hex');
 await fs.writeFile(path.join(output, 'SHA256SUMS.txt'), `${hash}  Wordbook-debug.apk\n`);
 await fs.writeFile(path.join(output, 'build-info.json'), JSON.stringify({
   sourceCommit: process.env.GITHUB_SHA || null, buildRun: process.env.GITHUB_RUN_ID || null,
-  package: 'com.wordbook.app', version: '0.1.0', signing: 'debug', sha256: hash,
+  package: 'com.wordbook.app', version: '0.2.0', signing: 'persistent-debug', signingCertificateSha256: signer, sha256: hash,
   builtAt: new Date().toISOString()
 }, null, 2));
 console.log(`Android debug APK: ${apk}\nSHA256: ${hash}`);

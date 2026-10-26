@@ -1,6 +1,7 @@
 export const keyOf = word => String(word ?? '').normalize('NFKC').trim().toLocaleLowerCase('en');
 const uid = () => globalThis.crypto?.randomUUID?.() || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
-export const emptyState = () => ({ version: 1, books: [], settings: { theme: 'light', fontSize: 18 } });
+export const defaultSettings = () => ({ theme: 'light', fontSize: 18, autoPronounce: false, repeat: 1, interval: 3, rate: 0.85 });
+export const emptyState = () => ({ version: 1, books: [], settings: defaultSettings() });
 function cleanEntry(raw) {
   const word = String(raw.word ?? '').trim();
   return { id: uid(), word, phonetic: String(raw.phonetic ?? '').trim(), meaning: String(raw.meaning ?? '').trim(), example: String(raw.example ?? '').trim(), status: raw.status === 'hidden' ? 'hidden' : 'new' };
@@ -16,7 +17,9 @@ export function importBook(state, name, sourceKey, entries) {
     const before = previous.get(keyOf(entry.word));
     if (before) { entry.id = before.id; entry.status = before.status; }
   }
-  const book = reconcileStudy({ id: old?.id || uid(), name: old?.name || name.trim(), sourceKey, entries: clean, updatedAt: new Date().toISOString(), study: old?.study });
+  let book = { id: old?.id || uid(), name: old?.name || name.trim(), sourceKey, entries: clean, updatedAt: new Date().toISOString(), study: old?.study };
+  if (clean.some(e => !previous.has(keyOf(e.word)))) book = reopenStudy(book);
+  book = reconcileStudy(book);
   const books = old ? state.books.map(b => b.id === old.id ? book : b) : [...state.books, book];
   return { ...state, books };
 }
@@ -66,8 +69,13 @@ export function reconcileStudy(book) {
   for (const mode of ['alpha', 'random']) {
     if (!raw[mode] || typeof raw[mode] !== 'object' || Array.isArray(raw[mode])) continue;
     const session = repairSession(book, mode, raw[mode]);
-    study[mode] = mode === 'alpha' ? { current: session.current } : session;
+    study[mode] = { ...(mode === 'alpha' ? { current: session.current } : session), ...(raw[mode].completed === true ? { completed: true } : {}) };
   }
+  return { ...book, study };
+}
+export function reopenStudy(book) {
+  const study = { ...book.study };
+  for (const mode of ['alpha', 'random']) if (study[mode]) { study[mode] = { ...study[mode] }; delete study[mode].completed; }
   return { ...book, study };
 }
 
@@ -78,15 +86,15 @@ export function studySession(book, mode = book.study?.mode, { restart = false, r
     ? repairSession(book, mode, saved, random)
     : { queue: makeQueue(book, mode, random).map(e => keyOf(e.word)) };
   const cursor = Math.max(0, session.queue.indexOf(session.current));
-  return { mode, queue: session.queue, cursor };
+  return { mode, queue: session.queue, cursor, ...(!restart && saved?.completed === true ? { completed: true } : {}) };
 }
 
 export function rememberStudy(book, session) {
   const mode = session.mode === 'random' ? 'random' : 'alpha';
   const repaired = repairSession(book, mode, { queue: session.queue, current: session.queue[session.cursor] || null });
   const study = { ...reconcileStudy(book).study, mode };
-  study[mode] = mode === 'alpha' ? { current: repaired.current } : repaired;
-  return { ...book, study };
+  study[mode] = { ...(mode === 'alpha' ? { current: repaired.current } : repaired), ...(session.completed === true ? { completed: true } : {}) };
+  return { ...book, study, updatedAt: new Date().toISOString() };
 }
 export function validateBackup(value) {
   if (!value || value.version !== 1 || !Array.isArray(value.books)) throw Error('不是支持的 v1 单词本文件');
@@ -102,7 +110,12 @@ export function validateBackup(value) {
     });
     return reconcileStudy({ id: b.id, name: b.name.trim(), sourceKey: b.sourceKey, entries, updatedAt: typeof b.updatedAt === 'string' ? b.updatedAt : new Date().toISOString(), study: b.study });
   });
-  return { version: 1, books, settings: { theme: value.settings?.theme === 'dark' ? 'dark' : 'light', fontSize: Math.max(14, Math.min(28, Number(value.settings?.fontSize) || 18)) } };
+  const s = value.settings || {};
+  return { version: 1, books, ...(typeof value.exportedAt === 'string' ? { exportedAt: value.exportedAt } : {}), settings: {
+    theme: s.theme === 'dark' ? 'dark' : 'light', fontSize: Math.max(14, Math.min(28, Number(s.fontSize) || 18)),
+    autoPronounce: s.autoPronounce === true, repeat: Math.max(1, Math.min(3, Math.round(Number(s.repeat) || 1))),
+    interval: Math.max(1, Math.min(15, Number(s.interval) || 3)), rate: Math.max(0.5, Math.min(1.5, Number(s.rate) || 0.85))
+  } };
 }
 export function mergeBackup(current, backup) {
   const incoming = validateBackup(backup);

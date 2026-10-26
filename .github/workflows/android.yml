@@ -5,6 +5,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  actions: read
 jobs:
   android:
     runs-on: ubuntu-24.04
@@ -31,9 +32,22 @@ jobs:
         with:
           path: ~/.android/debug.keystore
           key: wordbook-debug-signing-v1
+      - name: Restore persistent signing identity
+        env:
+          ANDROID_SIGNING_KEYSTORE: ${{ secrets.ANDROID_SIGNING_KEYSTORE }}
+        run: |
+          node --input-type=module -e "import fs from 'node:fs';import os from 'node:os';import path from 'node:path';const p=path.join(os.homedir(),'.android/debug.keystore');if(process.env.ANDROID_SIGNING_KEYSTORE){fs.mkdirSync(path.dirname(p),{recursive:true});fs.writeFileSync(p,Buffer.from(process.env.ANDROID_SIGNING_KEYSTORE,'base64'),{mode:0o600});}if(!fs.existsSync(p))throw Error('Existing signing key missing. Restore it before building an update.');"
+      - name: Download upgrade baseline
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/android-baseline.mjs
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
       - run: pnpm package:android
+      - name: Seal signing identity for persistent storage
+        run: |
+          python3 -m pip install PyNaCl==1.5.0
+          python3 scripts/seal-android-signing.py
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -59,3 +73,8 @@ jobs:
           name: wordbook-android-checks
           path: dist/reports/android/
           if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wordbook-signing-recovery
+          path: dist/.cache/signing-recovery/signing-secret.json
+          if-no-files-found: error

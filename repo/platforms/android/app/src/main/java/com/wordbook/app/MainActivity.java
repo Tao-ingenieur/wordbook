@@ -17,7 +17,6 @@ import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.Toast;
 import android.widget.FrameLayout;
 import android.view.View;
 import org.json.JSONObject;
@@ -35,6 +34,7 @@ public class MainActivity extends Activity {
     private WebView web;
     private TextToSpeech tts;
     private boolean voiceReady;
+    private String speechId;
     private ValueCallback<Uri[]> fileCallback;
     private String saveId, saveText;
     private final ExecutorService io = Executors.newSingleThreadExecutor();
@@ -64,6 +64,7 @@ public class MainActivity extends Activity {
         settings.setAllowContentAccess(true); // System document picker grants selected content URI only.
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         settings.setTextZoom(100);
+        settings.setCacheMode(WebSettings.LOAD_NO_CACHE); // APK updates replace assets; persistent word data lives in DOM storage.
         web.addJavascriptInterface(new Bridge(), "WordbookAndroid");
         web.setWebViewClient(new WebViewClient() {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
@@ -128,20 +129,25 @@ public class MainActivity extends Activity {
         tts.setSpeechRate(0.85f);
         tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
             @Override public void onStart(String id) { }
-            @Override public void onDone(String id) { }
-            @Override public void onError(String id) { notifyUser("朗读失败，请检查系统英文语音包"); }
+            @Override public void onDone(String id) { finishSpeech(id, null); }
+            @Override public void onError(String id) { finishSpeech(id, "朗读失败，请检查系统英文语音包"); }
         });
     }
-    private void notifyUser(String message) { runOnUiThread(() -> Toast.makeText(this, message, Toast.LENGTH_LONG).show()); }
 
     public final class Bridge {
-        @JavascriptInterface public void speak(String word) {
-            if (word == null || word.length() > TextToSpeech.getMaxSpeechInputLength()) return;
+        @JavascriptInterface public void speak(String word, double rate, String id) {
+            if (id == null || id.length() > 100) return;
             runOnUiThread(() -> {
-                if (!voiceReady || tts == null) { notifyUser("请先在系统文字转语音设置中安装离线英文语音包"); return; }
-                if (tts.speak(word, TextToSpeech.QUEUE_FLUSH, null, "wordbook") == TextToSpeech.ERROR)
-                    notifyUser("朗读失败，请检查系统语音设置");
+                if (word == null || word.length() > TextToSpeech.getMaxSpeechInputLength()) { finishSpeech(id, "单词过长"); return; }
+                if (!voiceReady || tts == null) { finishSpeech(id, "请先在系统文字转语音设置中安装离线英文语音包"); return; }
+                speechId = id;
+                tts.setSpeechRate((float) Math.max(0.5, Math.min(1.5, rate)));
+                if (tts.speak(word, TextToSpeech.QUEUE_FLUSH, null, id) == TextToSpeech.ERROR)
+                    finishSpeech(id, "朗读失败，请检查系统语音设置");
             });
+        }
+        @JavascriptInterface public void stopSpeech() {
+            runOnUiThread(() -> { if (tts != null) tts.stop(); if (speechId != null) finishSpeech(speechId, "朗读已取消"); });
         }
         @JavascriptInterface public void saveFile(String name, String text, String id) {
             if (id == null || id.length() > 100) return;
@@ -157,6 +163,15 @@ public class MainActivity extends Activity {
                 catch (Exception error) { saveId = null; saveText = null; finishSave(id, false, "无法打开系统保存窗口"); }
             });
         }
+    }
+    private void finishSpeech(String id, String error) {
+        JSONObject result = new JSONObject();
+        try { result.put("id", id); if (error != null) result.put("error", error); }
+        catch (Exception ignored) { return; }
+        runOnUiThread(() -> {
+            if (id.equals(speechId)) speechId = null;
+            if (web != null) web.evaluateJavascript("window.dispatchEvent(new CustomEvent('wordbook-speech-result',{detail:" + result + "}))", null);
+        });
     }
     private void finishSave(String id, boolean saved, String error) {
         JSONObject result = new JSONObject();
@@ -184,7 +199,12 @@ public class MainActivity extends Activity {
             });
         }
     }
-    @Override protected void onPause() { if (tts != null) tts.stop(); super.onPause(); }
+    @Override protected void onPause() {
+        if (tts != null) tts.stop();
+        if (speechId != null) finishSpeech(speechId, "应用已进入后台，朗读已停止");
+        if (web != null) web.evaluateJavascript("window.dispatchEvent(new Event('wordbook-background'))", null);
+        super.onPause();
+    }
     @Override protected void onDestroy() {
         if (fileCallback != null) fileCallback.onReceiveValue(null);
         if (tts != null) { tts.stop(); tts.shutdown(); tts = null; }

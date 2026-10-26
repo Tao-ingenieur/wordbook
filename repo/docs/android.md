@@ -18,7 +18,11 @@ pnpm package:android
 - `dist/android/SHA256SUMS.txt`：APK 的 SHA-256。
 - `dist/.cache/android/`：Gradle 构建中间文件。
 
-GitHub Actions 的 **Android APK** 工作流在 main 推送后自动构建；完成后在该次运行的 Artifacts 下载 `wordbook-android`。构建不读取个人 `dist/input`、`dist/data` 或备份。CI 缓存调试证书以方便连续安装；不同环境或缓存丢失后生成的调试证书可能不同，无法覆盖安装时先导出数据再卸载旧版本。公开商店发布还需正式签名和发布验收。
+GitHub Actions 的 **Android APK** 工作流在 main 推送后自动构建；完成后在该次运行的 Artifacts 下载 `wordbook-android`。构建不读取个人 `dist/input`、`dist/data` 或备份。
+
+v0.2.0 延用 v0.1.0 的签名身份，以便覆盖安装并保留数据。CI 优先从仓库 Actions Secret `ANDROID_SIGNING_KEYSTORE` 恢复固定签名，不依赖缓存长期保留；首次迁移从已有缓存恢复，使用仓库公开加密密钥密封后写入 Secret，源码和公共产物中不存明文密钥。构建用 `apksigner` 验证签名并与上一份成功 APK 的证书比较，证书不同会中止；模拟器先安装旧版并背到指定单词，再覆盖安装新版检查数据保留。版本号为 `0.2.0` / `versionCode 200`，仍是供侧载的调试签名包，不是商店正式签名发布。
+
+本机自行打包的默认调试密钥可能不同，不能拿它覆盖 CI 版本。不要为解决签名不匹配而直接卸载有数据的应用；先导出数据、恢复原签名，或明确安排迁移。后续版本需递增 `versionCode`；如果上次构建的基线 artifact 已过期，应恢复保留的旧 APK 后再验证升级。
 
 ## 安装和使用
 
@@ -29,6 +33,7 @@ Android 7.0+，需要较新的 Android System WebView / Chrome；旧系统自带
 - 导入：系统文档选择器选择 Excel、CSV、文本 PDF 或 JSON，由共享解析器在本机预览处理。
 - 导出：系统“另存为”选择位置保存 JSON，支持取消与写入失败反馈。
 - 发音：Android TextToSpeech，选择无需网络的英文语音；需先在系统设置安装相应离线英文语音包。缺失时应用会提示，不改用在线服务。
+- 背词：支持搜索编辑、左右滑动切词、误隐藏撤销、队尾完成提示；自动发音、重复次数、语速和连播间隔在设置中调整。进入后台暂停连播，回到前台不会自行续播。
 - 迁移：设置导出全部数据，一个 JSON 保留所有独立单词本及各自进度，换设备后手动导入。
 
 Android 系统文件选择器可能提供网盘位置；选择远程文件的下载行为由对应文档提供应用负责。

@@ -1,5 +1,5 @@
 process.env.WORDBOOK_SMOKE_TEST = '1';
-const { app } = require('electron');
+const { app, ipcMain } = require('electron');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const assert = require('node:assert/strict');
@@ -40,6 +40,47 @@ async function run() {
   await click('继续背诵 →'); assert.deepEqual(await card(), random);
   assert.equal(await web.executeJavaScript('document.querySelector(".study-controls .selected").textContent.trim()'), '⇄ 完全乱序');
   checks.push('重新加载后恢复上次排序与当前卡片');
+  await web.executeJavaScript(`Object.defineProperty(window,'speechSynthesis',{configurable:true,value:{cancel(){},speak(utterance){setTimeout(()=>utterance.onend?.(),20)}}});true`);
+  const beforePlay = (await card()).word;
+  await click('开始连播');
+  for (let i = 0; i < 35 && (await card()).word === beforePlay; i++) await wait();
+  assert.notEqual((await card()).word, beforePlay);
+  await click('暂停连播'); const paused = await card();
+  await new Promise(resolve => setTimeout(resolve, 3300)); assert.deepEqual(await card(), paused);
+  checks.push('连播等待发音结束和间隔再切词，暂停后保持当前位置');
+  await click('A–Z 字母顺序');
+  await click('搜索与编辑词条'); await click('新增词条');
+  async function fill(selector, value) {
+    await web.executeJavaScript(`(() => { const input=document.querySelector(${JSON.stringify(selector)});if(!input)throw Error('Missing input');input.value=${JSON.stringify(value)};input.dispatchEvent(new Event('input',{bubbles:true}));})()`); await wait();
+  }
+  await fill('.entry-editor input', 'zoology'); await fill('.entry-editor textarea', '动物学');
+  await click('保存词条'); await fill('.modal .name-input input', 'zoology');
+  assert.match(await text(), /动物学/);
+  await click('跳转背诵'); assert.equal((await card()).word, 'zoology');
+  checks.push('新增、中文释义搜索与跳转背诵');
+  await click('✓ 已记住，隐藏'); await click('继续查看'); await click('撤销隐藏');
+  assert.equal((await card()).word, 'zoology');
+  await click('下一个 →'); assert.match(await text(), /本轮已完成/); await click('继续查看');
+  await web.executeJavaScript(`document.body.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowLeft',bubbles:true}))`); await wait();
+  assert.notEqual((await card()).word, 'zoology');
+  await web.executeJavaScript(`document.body.dispatchEvent(new KeyboardEvent('keydown',{code:'Space',bubbles:true}))`); await wait();
+  assert.ok(await web.executeJavaScript('!!document.querySelector(".flashcard.flipped")'));
+  checks.push('撤销隐藏、队尾完成不循环、键盘切词与翻面');
+  await click('⚙　基础设置'); await click('本地恢复点');
+  assert.match(await text(), /修改前/); await web.executeJavaScript('document.querySelector("[aria-label=关闭恢复点]").click()'); await wait();
+  checks.push('编辑前自动创建本地恢复点');
+  let exported;
+  ipcMain.removeHandler('backup:save');
+  ipcMain.handle('backup:save', (_event, _name, value) => { exported = value; return true; });
+  await click('导出全部数据');
+  const incoming = JSON.parse(exported); assert.equal(incoming.books.length, 1); assert.ok(incoming.exportedAt);
+  incoming.books[0].name = '备份中的示例本'; incoming.books[0].entries[0].status = 'hidden';
+  await click('＋　导入单词本'); await click('粘贴 JSON 恢复');
+  await fill('.paste-area textarea', JSON.stringify(incoming)); await click('检查内容');
+  assert.match(await text(), /隐藏状态变化 1/);
+  assert.ok(await web.executeJavaScript(`([...document.querySelectorAll('uni-button')].find(b=>b.textContent.trim()==='确认所选恢复方式')).hasAttribute('disabled')`));
+  await click('使用备份覆盖'); await click('确认所选恢复方式');
+  assert.match(await text(), /备份中的示例本/); checks.push('完整 JSON 导出、恢复差异及显式覆盖选择');
   await click('＋　导入单词本');
   async function importFixture(name) {
     const bytes = Array.from(await fs.readFile(path.resolve(__dirname, '../../dist/input', name)));
