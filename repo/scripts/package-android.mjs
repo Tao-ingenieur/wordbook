@@ -5,6 +5,7 @@ import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const dist = path.resolve(repo, '../dist');
+const manifest = JSON.parse(await fs.readFile(path.join(repo, 'src/manifest.json'), 'utf8'));
 async function run(command, args, cwd) {
   const child = spawn(command, args, { cwd, stdio: 'inherit' });
   const status = await new Promise((resolve, reject) => { child.on('error', reject); child.on('exit', resolve); });
@@ -47,7 +48,7 @@ const hash = createHash('sha256').update(await fs.readFile(apk)).digest('hex');
 await fs.writeFile(path.join(output, 'SHA256SUMS.txt'), `${hash}  Wordbook-debug.apk\n`);
 await fs.writeFile(path.join(output, 'build-info.json'), JSON.stringify({
   sourceCommit: process.env.GITHUB_SHA || null, buildRun: process.env.GITHUB_RUN_ID || null,
-  package: 'com.wordbook.offline', version: '0.2.0', signing: 'persistent-debug', signingCertificateSha256: signer, sha256: hash,
+  package: 'com.wordbook.offline', version: manifest.versionName, versionCode: Number(manifest.versionCode), signing: 'persistent-debug', signingCertificateSha256: signer, sha256: hash,
   builtAt: new Date().toISOString()
 }, null, 2));
 console.log(`Android debug APK: ${apk}\nSHA256: ${hash}`);

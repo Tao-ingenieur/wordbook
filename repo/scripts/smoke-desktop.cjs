@@ -1,5 +1,7 @@
 process.env.WORDBOOK_SMOKE_TEST = '1';
-const { app, ipcMain } = require('electron');
+const { app, ipcMain, Menu, dialog } = require('electron');
+const version = require('../package.json').version;
+const build = require('../src/manifest.json').versionCode;
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const assert = require('node:assert/strict');
@@ -97,12 +99,29 @@ async function run() {
   assert.match(await text(), /选中 3 条/); checks.push('本地 Excel 文件解析与脏数据默认剔除');
   await click('创建单词本');
   await click('＋　导入单词本');
-  await importFixture('俞敏洪托福单词串讲.pdf');
+  const pdfFixture = files.find(name => /^俞敏洪托福单词.*\.pdf$/i.test(name));
+  assert.ok(pdfFixture, '输入目录缺少托福 PDF 检查资料');
+  await importFixture(pdfFixture);
   assert.ok(await web.executeJavaScript(`[...document.querySelectorAll('.preview-fields input')].some(input=>input.value==='a range of')`)); checks.push('file 协议下 PDF Worker 正常解析双栏源文件');
   await web.executeJavaScript('document.querySelector(".modal-heading .icon-btn").click()'); await wait();
   await click('▤　我的单词本');
   await fs.mkdir(output, { recursive: true });
   await fs.writeFile(path.join(output, 'desktop-preview.png'), (await web.capturePage()).toPNG());
+  const help = Menu.getApplicationMenu().items.find(item => item.role === 'help');
+  assert.ok(help?.submenu.items.find(item => item.label === '关于拾词'));
+  const originalDialog = dialog.showMessageBox;
+  let about;
+  dialog.showMessageBox = async (_window, options) => { about = options; return { response: 0 }; };
+  try { await help.submenu.items.find(item => item.label === '关于拾词').click(); }
+  finally { dialog.showMessageBox = originalDialog; }
+  assert.ok(about.detail.includes('版本 ' + version)); checks.push('Windows Help → 关于拾词显示当前应用版本');
+  await click('帮助'); assert.ok((await text()).includes('版本 ' + version)); assert.ok((await text()).includes('构建号 ' + build));
+  await fs.writeFile(path.join(output, 'about-desktop.png'), (await web.capturePage()).toPNG());
+  win.setContentSize(390, 844); await wait();
+  assert.ok(await web.executeJavaScript('document.querySelector(".top-actions uni-button").getBoundingClientRect().width > 0'));
+  assert.ok(await web.executeJavaScript('document.documentElement.scrollWidth <= window.innerWidth'));
+  await fs.writeFile(path.join(output, 'about-mobile.png'), (await web.capturePage()).toPNG());
+  checks.push('帮助页在桌面和手机宽度显示版本与构建号，无横向溢出');
   await fs.writeFile(path.join(output, 'desktop-smoke.json'), JSON.stringify({ passed: true, checks, logs }, null, 2));
   console.log(JSON.stringify({ passed: true, checks }, null, 2));
   app.quit();

@@ -12,3 +12,5 @@ button { cursor:pointer; transition:background .15s,transform .15s; } button:act
 .preview-pagination { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 0 0; }
 .resume-bar { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px; }
 .study-links,.playback-bar,.undo-bar { display:flex; gap:16px; align-items:center; justify-content:space-between; flex-wrap:wrap; }.playback-bar,.undo-bar { margin-bottom:16px; }.backup-reminder { margin-bottom:22px; }.book-search { margin-top:16px; }.book-search+.book-footer { margin-top:10px; }.import-options,.modal-footer { flex-wrap:wrap; }
+
+.app-version { display:block; font-size:26px; font-weight:650; color:var(--accent); margin:18px 0 10px; }.help-content .instructions>text { line-height:1.9; }.about-panel .muted { display:block; }

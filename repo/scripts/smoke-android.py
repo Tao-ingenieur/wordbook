@@ -172,6 +172,14 @@ try:
     activity(package); find('检查导入内容'); find('androidpdfword')
     find('创建单词本', True)
     checks.append('Android imports an actual text PDF using its embedded local PDF Worker')
+    manifest = json.loads((root / 'repo/src/manifest.json').read_text(encoding='utf-8'))
+    find('帮助', True, exact=True)
+    find('版本 ' + manifest['versionName'])
+    find('构建号 ' + manifest['versionCode'])
+    installed = adb('shell', 'dumpsys', 'package', package).decode('utf-8', errors='replace')
+    assert 'versionName=' + manifest['versionName'] in installed
+    assert 'versionCode=' + manifest['versionCode'] + ' ' in installed
+    checks.append('Help shows version and build number matching the installed APK')
     (report / 'screen.png').write_bytes(adb('exec-out', 'screencap', '-p'))
     (report / 'smoke.json').write_text(json.dumps({'passed': True, 'checks': checks}, indent=2), encoding='utf-8')
 except Exception as error:

@@ -1,4 +1,5 @@
 plugins { id 'com.android.application' }
+def appManifest = new groovy.json.JsonSlurper().parse(file('../../../src/manifest.json'))
 android {
     namespace 'com.wordbook.app'
     compileSdk 35
@@ -7,8 +8,8 @@ android {
         applicationId 'com.wordbook.offline'
         minSdk 24
         targetSdk 35
-        versionCode 201
-        versionName '0.2.0'
+        versionCode appManifest.versionCode.toInteger()
+        versionName appManifest.versionName
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17

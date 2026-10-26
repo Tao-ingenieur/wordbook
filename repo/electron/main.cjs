@@ -1,4 +1,5 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, Menu } = require('electron');
+const appVersion = require('../package.json').version;
 const fs = require('node:fs/promises');
 const fsSync = require('node:fs');
 const path = require('node:path');
@@ -14,6 +15,15 @@ const ready = app.whenReady().then(async () => {
   win = new BrowserWindow({ width: 1280, height: 860, minWidth: 380, minHeight: 600, show: !smoke, title: '拾词 · Wordbook', webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, offscreen: smoke, backgroundThrottling: !smoke } });
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', event => event.preventDefault());
+  Menu.setApplicationMenu(Menu.buildFromTemplate([
+    { label: '文件', submenu: [{ role: 'quit', label: '退出' }] },
+    { label: '编辑', submenu: [{ role: 'undo' }, { role: 'redo' }, { type: 'separator' }, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }] },
+    { label: '视图', submenu: [{ role: 'reload' }, { role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' }, { role: 'togglefullscreen' }] },
+    { role: 'help', label: '帮助（Help）', submenu: [{ label: '关于拾词', click: () => dialog.showMessageBox(win, {
+      type: 'info', title: '关于拾词', message: '拾词 · Wordbook',
+      detail: `版本 ${appVersion}\n\n本地单词本，支持手动备份和恢复。\n使用说明请点击应用右上角“帮助”。`, buttons: ['确定']
+    }) }] }
+  ]));
   ipcMain.handle('input:list', async () => (await fs.readdir(input, { withFileTypes: true })).filter(e => e.isFile() && /\.(xlsx?|csv|pdf)$/i.test(e.name)).map(e => e.name));
   ipcMain.handle('input:read', async (_event, name) => {
     if (typeof name !== 'string' || path.basename(name) !== name || !/\.(xlsx?|csv|pdf)$/i.test(name)) throw Error('无效的输入文件');
