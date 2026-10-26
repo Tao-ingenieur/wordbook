@@ -44,6 +44,7 @@ jobs:
           api-level: 35
           target: google_apis
           arch: x86_64
+          profile: pixel_6
           disable-animations: true
           script: python3 repo/scripts/smoke-android.py
       - uses: actions/upload-artifact@v4

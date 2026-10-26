@@ -21,6 +21,7 @@ def snapshot():
 
 def find(label, tap=False):
     deadline = time.monotonic() + 45
+    attempt = 0
     while time.monotonic() < deadline:
         try:
             tree = snapshot()
@@ -30,11 +31,18 @@ def find(label, tap=False):
         for node in tree.iter('node'):
             text = node.attrib.get('text', '') + node.attrib.get('content-desc', '')
             if label in text:
+                x1, y1, x2, y2 = map(int, re.findall(r'\d+', node.attrib['bounds']))
+                if x2 <= x1 or y2 <= y1:
+                    continue  # WebView exposes off-screen text with zero bounds; never tap (0, 0).
                 if tap:
-                    x1, y1, x2, y2 = map(int, re.findall(r'\d+', node.attrib['bounds']))
                     adb('shell', 'input', 'tap', str((x1+x2)//2), str((y1+y2)//2))
                     time.sleep(1)
                 return
+        bounds = next(tree.iter('node')).attrib['bounds']
+        _, _, width, height = map(int, re.findall(r'\d+', bounds))
+        start, end = (int(height*.78), int(height*.25)) if attempt % 8 < 4 else (int(height*.25), int(height*.78))
+        adb('shell', 'input', 'swipe', str(width//2), str(start), str(width//2), str(end), '300')
+        attempt += 1
         time.sleep(1)
     raise AssertionError('Android UI missing: ' + label)
 

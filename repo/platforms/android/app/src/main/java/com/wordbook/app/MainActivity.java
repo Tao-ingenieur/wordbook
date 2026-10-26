@@ -174,9 +174,6 @@ public class MainActivity extends Activity {
             });
         }
     }
-    @Override public void onBackPressed() {
-        super.onBackPressed();
-    }
     @Override protected void onPause() { if (tts != null) tts.stop(); super.onPause(); }
     @Override protected void onDestroy() {
         if (fileCallback != null) fileCallback.onReceiveValue(null);
