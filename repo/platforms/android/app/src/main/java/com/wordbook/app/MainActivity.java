@@ -3,6 +3,7 @@ package com.wordbook.app;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
@@ -17,6 +18,8 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
+import android.widget.FrameLayout;
+import android.view.View;
 import org.json.JSONObject;
 import java.io.ByteArrayInputStream;
 import java.io.OutputStream;
@@ -40,13 +43,20 @@ public class MainActivity extends Activity {
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         web = new WebView(this);
-        setContentView(web);
-        web.setOnApplyWindowInsetsListener((view, insets) -> {
+        FrameLayout container = new FrameLayout(this);
+        container.setBackgroundColor(Color.WHITE);
+        container.addView(web, new FrameLayout.LayoutParams(-1, -1));
+        setContentView(container);
+        getWindow().setStatusBarColor(Color.WHITE);
+        getWindow().setNavigationBarColor(Color.WHITE);
+        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+        // WebView itself ignores content padding; apply system insets to its native parent.
+        container.setOnApplyWindowInsetsListener((view, insets) -> {
             view.setPadding(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(),
                 insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
             return insets;
         });
-        web.requestApplyInsets();
+        container.requestApplyInsets();
         WebSettings settings = web.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
