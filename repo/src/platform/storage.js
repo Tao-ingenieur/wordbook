@@ -20,8 +20,12 @@ export function saveState(state, { checkpoint = false } = {}) {
       const point = { at: new Date().toISOString(), reason: checkpoint ? '修改前' : '每日', raw: typeof raw === 'string' ? raw : JSON.stringify(raw) };
       try { uni.setStorageSync(RECOVERY, JSON.stringify([point, ...points].slice(0, 2))); }
       catch {
-        if (checkpoint) throw Error('无法创建修改前恢复点，请先导出备份并释放存储空间');
-        warning = '自动恢复点保存失败，请手动导出备份';
+        let kept = false;
+        if (points.length) try { uni.setStorageSync(RECOVERY, JSON.stringify([point])); kept = true; } catch { /* Keep the existing recovery data on write failure. */ }
+        if (!kept) {
+          if (checkpoint) throw Error('无法创建修改前恢复点，请先导出备份并释放存储空间');
+          warning = '自动恢复点保存失败，请手动导出备份';
+        }
       }
     }
   }

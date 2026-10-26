@@ -10,6 +10,22 @@ const headers = { Authorization: `Bearer ${process.env.GITHUB_TOKEN}`, Accept: '
 async function get(url) { const response = await fetch(url, { headers }); if (!response.ok) throw Error(`Baseline download failed: ${response.status}`); return response; }
 const base = `https://api.github.com/repos/${repository}`;
 const data = await (await get(`${base}/actions/workflows/android.yml/runs?status=success&per_page=10`)).json();
+async function fetchUpgradeCandidate() {
+  const history = await (await get(`${base}/actions/workflows/android.yml/runs?status=completed&per_page=10`)).json();
+  const target = path.resolve(repo, '../dist/.cache/android-upgrade');
+  for (const run of history.workflow_runs) {
+    const { artifacts } = await (await get(`${base}/actions/runs/${run.id}/artifacts`)).json();
+    const artifact = artifacts.find(a => a.name === 'wordbook-android' && !a.expired);
+    if (!artifact) continue;
+    await fs.mkdir(target, { recursive: true });
+    const zip = path.join(target, 'candidate.zip');
+    await fs.writeFile(zip, Buffer.from(await (await get(artifact.archive_download_url)).arrayBuffer()));
+    execFileSync('unzip', ['-jo', zip, 'Wordbook-debug.apk', 'build-info.json', '-d', target]);
+    const info = JSON.parse(await fs.readFile(path.join(target, 'build-info.json'), 'utf8'));
+    if (info.package === 'com.wordbook.offline') { console.log(`Same-package upgrade baseline: run ${run.id}`); return; }
+    await fs.unlink(path.join(target, 'Wordbook-debug.apk'));
+  }
+}
 for (const run of data.workflow_runs) {
   const { artifacts } = await (await get(`${base}/actions/runs/${run.id}/artifacts`)).json();
   const artifact = artifacts.find(a => a.name === 'wordbook-android' && !a.expired);
@@ -19,6 +35,7 @@ for (const run of data.workflow_runs) {
   await fs.writeFile(zip, Buffer.from(await (await get(artifact.archive_download_url)).arrayBuffer()));
   execFileSync('unzip', ['-jo', zip, 'Wordbook-debug.apk', 'build-info.json', '-d', output]);
   console.log(`Upgrade baseline downloaded from successful run ${run.id}`);
+  await fetchUpgradeCandidate();
   process.exit(0);
 }
 throw Error('No retained successful APK baseline. Restore the previous APK manually before changing signing identity.');

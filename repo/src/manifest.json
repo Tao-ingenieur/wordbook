@@ -1,5 +1,5 @@
 {
-  "name": "拾词", "appid": "", "description": "离线单词本", "versionName": "0.2.0", "versionCode": "200",
+  "name": "拾词", "appid": "", "description": "离线单词本", "versionName": "0.2.0", "versionCode": "201",
   "vueVersion": "3", "h5": { "router": { "mode": "hash" }, "title": "拾词 · Wordbook" },
   "uniStatistics": { "enable": false },
   "app-plus": { "usingComponents": true, "distribute": { "android": { "permissions": [] }, "ios": {} } },

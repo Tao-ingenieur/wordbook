@@ -40,6 +40,9 @@ try {
   const previous = JSON.parse(await fs.readFile(path.join(path.dirname(baseline), 'build-info.json'), 'utf8'));
   if (previous.package === 'com.wordbook.offline' && signer !== await certificate(baseline)) throw Error('Signing identity differs from the installed APK. Restore the existing signing key; do not uninstall or silently rotate the key.');
 } catch (error) { if (error.code !== 'ENOENT') throw error; }
+const upgrade = path.join(dist, '.cache/android-upgrade/Wordbook-debug.apk');
+try { await fs.access(upgrade); if (signer !== await certificate(upgrade)) throw Error('Persistent signing key differs from the previous same-package APK'); }
+catch (error) { if (error.code !== 'ENOENT') throw error; }
 const hash = createHash('sha256').update(await fs.readFile(apk)).digest('hex');
 await fs.writeFile(path.join(output, 'SHA256SUMS.txt'), `${hash}  Wordbook-debug.apk\n`);
 await fs.writeFile(path.join(output, 'build-info.json'), JSON.stringify({

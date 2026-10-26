@@ -29,6 +29,8 @@ def find(label, tap=False, exact=False, timeout=45):
             time.sleep(1)
             continue  # Accessibility may not have a root while the first WebView frame is loading.
         for node in tree.iter('node'):
+            if node.attrib.get('resource-id', '').endswith('/preview_icon'):
+                continue  # DocumentsUI preview is different from selecting the named file.
             text = node.attrib.get('text', '') + node.attrib.get('content-desc', '')
             matched = text.casefold() == label.casefold() if exact else label in text
             if matched:
@@ -60,6 +62,16 @@ checks = []
 package = 'com.wordbook.offline'
 component = package + '/com.wordbook.app.MainActivity'
 try:
+    upgrade = root / 'dist/.cache/android-upgrade/Wordbook-debug.apk'
+    if upgrade.exists():
+        adb('install', '-r', str(upgrade)); adb('shell', 'pm', 'clear', package)
+        adb('shell', 'am', 'start', '-n', component)
+        find('先用示例体验', True); find('开始背诵', True); find('下一个', True); find('curiosity')
+        adb('shell', 'am', 'force-stop', package)
+        adb('install', '-r', str(root / 'dist/android/Wordbook-debug.apk'))
+        adb('shell', 'am', 'start', '-n', component); find('继续背诵', True); find('curiosity')
+        checks.append('Persistent certificate verified; in-place upgrade retains words and study position')
+        adb('shell', 'am', 'force-stop', package); adb('shell', 'pm', 'clear', package)
     baseline = root / 'dist/.cache/android-baseline/Wordbook-debug.apk'
     previous = json.loads((baseline.parent / 'build-info.json').read_text()) if baseline.exists() else {'package': package}
     old_package = previous['package']

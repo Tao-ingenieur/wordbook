@@ -111,3 +111,16 @@ test('恢复点写入失败时不执行破坏性修改；普通保存可提示�
     assert.match(saveState(state), /自动恢复点/);
   } finally { globalThis.uni = old; }
 });
+test('空间只容纳一个恢复点时可自动淘汰旧点，继续安全编辑', () => {
+  const old = globalThis.uni, state = create(), store = new Map([['wordbook.v1', JSON.stringify(state)]]);
+  globalThis.uni = { getStorageSync: k => store.get(k), setStorageSync: (k, value) => {
+    if (k.includes('recovery') && JSON.parse(value).length > 1) throw Error('quota');
+    store.set(k, value);
+  } };
+  try {
+    saveState(state, { checkpoint: true });
+    const next = clone(state); next.books[0].name = 'updated'; saveState(next, { checkpoint: true });
+    assert.equal(recoveryPoints().length, 1); assert.equal(JSON.parse(recoveryPoints()[0].raw).books[0].name, 'book');
+    assert.equal(loadState().books[0].name, 'updated');
+  } finally { globalThis.uni = old; }
+});

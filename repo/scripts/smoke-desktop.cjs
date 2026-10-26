@@ -49,13 +49,17 @@ async function run() {
   await new Promise(resolve => setTimeout(resolve, 3300)); assert.deepEqual(await card(), paused);
   checks.push('连播等待发音结束和间隔再切词，暂停后保持当前位置');
   await click('A–Z 字母顺序');
-  await click('搜索与编辑词条'); await click('新增词条');
+  await click('搜索与编辑词条');
+  assert.equal(await web.executeJavaScript('getComputedStyle(document.querySelector(".modal")).backgroundColor'), 'rgb(255, 255, 255)');
+  await click('新增词条');
   async function fill(selector, value) {
     await web.executeJavaScript(`(() => { const input=document.querySelector(${JSON.stringify(selector)});if(!input)throw Error('Missing input');input.value=${JSON.stringify(value)};input.dispatchEvent(new Event('input',{bubbles:true}));})()`); await wait();
   }
   await fill('.entry-editor input', 'zoology'); await fill('.entry-editor textarea', '动物学');
   await click('保存词条'); await fill('.modal .name-input input', 'zoology');
   assert.match(await text(), /动物学/);
+  await fs.mkdir(output, { recursive: true });
+  await fs.writeFile(path.join(output, 'word-manager-preview.png'), (await web.capturePage()).toPNG());
   await click('跳转背诵'); assert.equal((await card()).word, 'zoology');
   checks.push('新增、中文释义搜索与跳转背诵');
   await click('✓ 已记住，隐藏'); await click('继续查看'); await click('撤销隐藏');
