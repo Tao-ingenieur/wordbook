@@ -16,6 +16,7 @@ pnpm build:weixin            # dist/weixin
 pnpm build:app               # dist/app，供 HBuilderX 后续原生打包
 pnpm desktop                # 先 build，再启动 Windows 桌面窗口
 pnpm package:win            # dist/desktop/Wordbook.exe + 同目录运行库
+pnpm package:android        # dist/android/Wordbook-debug.apk，需要 JDK 17 + Android SDK 35
 pnpm scan                   # dist/input -> dist/previews/*.preview.json
 ```
 
@@ -31,6 +32,7 @@ dist/
   web/           Web 发布文件
   weixin/        微信小程序文件
   app/           iOS/Android 共用原生打包资源
+  android/       Android APK 与 SHA-256 校验文件
   input/         Excel/PDF 源资料
   data/          Windows 本地单词本、隐藏状态、设置（保持原位置）
   backups/       手动导出备份的默认位置
@@ -69,12 +71,15 @@ dist/
 | Web | Excel、CSV、文本 PDF、JSON | 浏览器系统 TTS，英文语音包可用时离线 | 静态服务 |
 | Windows | 同 Web，另支持 input 目录扫描 | Chromium 系统 TTS | Electron portable 打包 |
 | 微信小程序 | 聊天文件选择 Excel/CSV/JSON、粘贴 JSON；PDF 先电脑转换 | 已接入同声传译调用，需配置插件授权；使用网络合成 | 填写真实 AppID、微信开发者工具验证 |
-| iOS / Android | WebView 文件选择器解析 Excel/CSV/PDF/JSON；Android 系统另存为、iOS 文档目录导出；支持粘贴恢复 | 系统 TTS 桥接代码，尚待真机验证 | DCloud AppID、HBuilderX、签名与原生打包 |
+| Android APK | 系统文档选择器导入 Excel/CSV/PDF/JSON，系统另存为导出；支持粘贴恢复 | 原生 TextToSpeech，需离线英文语音包 | Gradle / GitHub Actions 构建，无需 HBuilderX；调试签名 |
+| iOS / uni-app 原生运行时 | WebView 文件选择器解析 Excel/CSV/PDF/JSON；Android SAF、iOS 文档目录导出 | 系统 TTS 桥接代码，尚待真机验证 | DCloud AppID、HBuilderX、签名与原生打包 |
 
 小程序与 App 都不能访问电脑的 `dist/input`。可以先用 `pnpm scan` 生成预览 JSON，传给手机在导入页粘贴检查；也可导入电脑端正式导出的备份。
 
 微信朗读配置：先在微信公众平台为自己的 AppID 添加同声传译插件（提供方 `wx069ba97219f66d99`），然后执行 `node scripts/configure-weixin.mjs <真实AppID> <平台显示的插件版本>`，重新构建小程序。默认不添加未经授权的插件。该服务只用于点击发音时合成当前单词，不承担单词本保存或同步。参考 [腾讯官方示例](https://github.com/Tencent/Face2FaceTranslator)。
 
-**当前属于一期可运行实现与多端工程基础，并非已经完成五端上线验收。** App WebView 文件选择/本地 PDF Worker、系统 TTS、Android SAF 导出及微信插件授权都需要真机验证；各平台签名发布仍待完成。iOS 已配置文档共享，预期可通过“文件 → 我的 iPhone → 拾词”取出导出的 JSON，需签名安装后核验可见性。
+Android 原生壳复用 Web 构建，完整脚本、安装、调试签名与升级说明见 [Android APK](docs/android.md)。`dist/app` 继续保留为 uni-app 打包资源，与 `dist/android` 的 APK 分开。
+
+**当前属于一期可运行实现与多端工程基础，并非已经完成五端上线验收。** App 文件选择、本地 PDF Worker、系统 TTS、Android SAF 导出及微信插件授权都需要真机验证；各平台正式签名发布仍待完成。iOS 已配置文档共享，预期可通过“文件 → 我的 iPhone → 拾词”取出导出的 JSON，需签名安装后核验可见性。
 
 架构依据：[uni-app CLI](https://uniapp.dcloud.net.cn/quickstart-cli)、[Electron 安全建议](https://www.electronjs.org/docs/latest/tutorial/security/)、[SheetJS 官方安装](https://docs.sheetjs.com/docs/getting-started/installation/frameworks/)。

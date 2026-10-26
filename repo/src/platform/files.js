@@ -1,6 +1,7 @@
 import { excelToEntries } from '../core/excel.mjs';
 // #ifdef H5
 import { parseBrowserPdf } from './browser-pdf.js';
+import { saveAndroidBackup } from './android-bridge.js';
 // #endif
 // #ifdef APP-PLUS
 import { saveAndroidDocument } from './android-save.js';
@@ -54,6 +55,7 @@ export async function exportFile(name, value) {
   const text = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
   // #ifdef H5
   if (window.wordbookDesktop) return window.wordbookDesktop.saveFile(name, text);
+  if (window.WordbookAndroid) return saveAndroidBackup(name, text);
   const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
   const link = document.createElement('a'); link.href = url; link.download = name; link.click();
   setTimeout(() => URL.revokeObjectURL(url), 2000);

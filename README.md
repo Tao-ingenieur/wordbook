@@ -5,6 +5,7 @@
 - [`repo/`](repo/)：源码、构建脚本、配置和测试。
 - `dist/`：本地运行文件、`input/` 源资料和设备数据，全部排除在 Git 之外。
 - Windows 入口：`dist/desktop/Wordbook.exe`；现有单词本数据保持在 `dist/data/`。
+- Android APK：`dist/android/Wordbook-debug.apk`，通过 Gradle / GitHub Actions 构建；[安装与打包说明](repo/docs/android.md)。
 - [开发与使用说明](repo/README.md)
 - [验证记录与平台限制](repo/VERIFICATION.md)
 

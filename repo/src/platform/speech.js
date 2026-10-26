@@ -3,6 +3,7 @@ let iosSynth;
 // #endif
 export function speak(word) {
   // #ifdef H5
+  if (window.WordbookAndroid) { window.WordbookAndroid.speak(word); return; }
   if (!globalThis.speechSynthesis) throw Error('此浏览器没有语音朗读能力，请使用系统自带浏览器或桌面版');
   speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(word); utterance.lang = 'en-US'; utterance.rate = 0.85;

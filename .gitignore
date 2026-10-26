@@ -6,3 +6,8 @@
 **/.DS_Store
 **/*.log
 repo/.cache/
+/repo/platforms/android/.gradle/
+/repo/platforms/android/local.properties
+/repo/platforms/android/**/build/
+*.keystore
+*.jks

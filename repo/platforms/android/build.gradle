@@ -1,0 +1,7 @@
+plugins {
+    id 'com.android.application' version '8.7.3' apply false
+}
+// Keep intermediates outside the source tree, alongside other platform build caches.
+subprojects {
+    layout.buildDirectory = file("${rootProject.projectDir}/../../../dist/.cache/android/${project.name}")
+}

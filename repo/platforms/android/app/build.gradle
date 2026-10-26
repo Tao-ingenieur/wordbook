@@ -1,0 +1,26 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'com.wordbook.app'
+    compileSdk 35
+    buildToolsVersion '35.0.0'
+    defaultConfig {
+        applicationId 'com.wordbook.app'
+        minSdk 24
+        targetSdk 35
+        versionCode 100
+        versionName '0.1.0'
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    sourceSets.main.assets.srcDirs = ['../../../../dist/.cache/android-assets']
+}
+tasks.register('checkWebAssets') {
+    doLast {
+        if (!file('../../../../dist/.cache/android-assets/www/index.html').exists()) {
+            throw new GradleException('Run pnpm package:android from repo/ first.')
+        }
+    }
+}
+tasks.named('preBuild').configure { dependsOn 'checkWebAssets' }

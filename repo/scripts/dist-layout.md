@@ -6,6 +6,7 @@
 | `web/` | Web 静态发布文件。通过 HTTP 服务打开。 |
 | `weixin/` | 微信小程序编译文件。 |
 | `app/` | iOS/Android 共用的原生打包资源，尚不是 APK/IPA。 |
+| `android/` | Android 可安装 APK 与校验文件，构建说明见 `repo/docs/android.md`。 |
 | `input/` | 用户 Excel/PDF 源文件，一个文件对应一个单词本。 |
 | `data/` | Windows 本地单词本、隐藏状态和设置。更新程序时保留。 |
 | `backups/` | 手动导出 JSON 的默认位置，可在保存窗口改到其他目录。 |
