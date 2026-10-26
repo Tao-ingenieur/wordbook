@@ -8,15 +8,15 @@
 - 微信小程序构建成功，输出 `dist/weixin`。
 - App 资源构建成功，输出 `dist/app`；这是原生打包资源，不是 APK/IPA。
 - Windows 便携文件夹已生成，入口为 `dist/desktop/Wordbook.exe`，无需安装；须保留同目录运行库。
-- Android 固定调试签名 APK 已生成并下载到 `dist/android/Wordbook-debug.apk`，SHA-256 与构建清单一致。源码提交 `c7f31bf`，包名 `com.wordbook.offline`，版本 `0.2.1` / versionCode 202；构建来源、签名证书摘要及校验值在同目录 `build-info.json`、`SHA256SUMS.txt`。
-- `node --test --test-isolation=none tests/*.test.mjs`：38 项通过，含开发/发布路径一致性、测试数据隔离、续背、词条编辑搜索、备份差异恢复、播放完成/取消和恢复点空间处理。
-- Electron 独立测试数据目录下冒烟检查：15 项通过，报告在 `dist/reports/desktop/desktop-smoke.json`，界面截图在 `dist/reports/desktop/desktop-preview.png`、`word-manager-preview.png`、`about-desktop.png`、`about-mobile.png`。
+- Android 固定调试签名 APK 已生成并下载到 `dist/android/Wordbook-debug.apk`，SHA-256 与构建清单一致。源码提交 `ce73c4f`，包名 `com.wordbook.offline`，版本 `0.2.2` / versionCode 203；构建来源、签名证书摘要及校验值在同目录 `build-info.json`、`SHA256SUMS.txt`。
+- `node --test --test-isolation=none tests/*.test.mjs`：40 项通过，含开发/发布路径一致性、测试数据隔离、续背、词条编辑搜索、备份差异恢复、播放完成/取消和恢复点空间处理。
+- Electron 独立测试数据目录下冒烟检查：17 项通过，报告在 `dist/reports/desktop/desktop-smoke.json`，界面截图在 `dist/reports/desktop/desktop-preview.png`、`word-manager-preview.png`、`about-desktop.png`、`about-mobile.png`、`about-mobile-en.png`。
 
 桌面检查覆盖：preload 与 input 目录扫描、卡片翻转、隐藏后退出队列、恢复生词、Excel 解析和脏数据默认剔除、本地文件协议下双栏 PDF 的 Worker 解析。检查启用 CSP 后再次通过。
 
 续背验证：桌面离开再进入、切换排序、页面重载后恢复当前词与位置；模型检查每本两套进度独立、乱序队列持久化、隐藏/恢复/覆盖后的队列修复、显式重开、复制本进度独立以及旧备份兼容。三个单词本导出到一个 JSON 再合并导入空设备数据，确认仍为三个独立单词本且各自进度与隐藏状态保留。测试不读写用户的 `dist/data/`。
 
-Android 35 / Pixel 6 模拟器十一项检查通过：[GitHub Actions 40275048102](https://github.com/Tao-ingenieur/wordbook/actions/runs/40275048102)。覆盖固定签名及覆盖安装保留进度、安装启动与卡片显示、关闭重开续背、左右滑动、新增搜索跳转、撤销隐藏与队尾停止、JSON 实际写入 Downloads、选择 JSON 后比较恢复、真实文本 PDF 导入，以及帮助页版本/构建号与 Android 安装信息一致。报告和截图下载到 `dist/reports/android/`；旧包名并存和 JSON 迁移已在 v0.2.0 验证。
+Android 35 / Pixel 6 模拟器十二项检查通过：[GitHub Actions 40277302907](https://github.com/Tao-ingenieur/wordbook/actions/runs/40277302907)。覆盖固定签名及覆盖安装保留进度、安装启动与卡片显示、关闭重开续背、左右滑动、新增搜索跳转、撤销隐藏与队尾停止、JSON 实际写入 Downloads、选择 JSON 后比较恢复、真实文本 PDF 导入，以及帮助页版本/构建号与 Android 安装信息一致、切换英文后重启保持英文并可切回中文。报告和截图下载到 `dist/reports/android/`；旧包名并存和 JSON 迁移已在 v0.2.0 验证。
 
 桌面补充检查覆盖连播完成回调与暂停、新增后按中文释义搜索、跳转、隐藏撤销、队尾不循环、键盘操作、编辑前恢复点、带导出时间的完整 JSON 与显式恢复选择；并断言新组件弹窗具有正确背景样式。播放逻辑使用可控发音回调测试，不替代实际听音。
 
@@ -61,3 +61,10 @@ Android 旧版 v0.1.0 的临时签名未实际缓存，密钥已无法恢复，�
 - Windows 打包改为完整替换网页资源，删除累积的旧哈希文件，并排除 Electron 默认示例 `default_app.asar`；当前 Windows 包已按新规则重新生成。
 - 13 项隔离桌面检查通过；Windows 包内网页文件清单与内容逐项匹配 `dist/web/`，EXE 与依赖提供的 Electron 运行时哈希相同。
 - 清理前后逐文件 SHA-256 核对：`input/`、`data/`、`backups/`、`previews/`、`android/`、`web/`、`app/`、`weixin/` 全部一致。源码依赖、固定 vendor 包、Gradle Wrapper、许可证及各平台当前产物保留。
+
+## 中英双语复核（v0.2.2）
+
+- 主页面、导入预览、词条管理、备份比较、帮助、错误与操作提示接入中英消息；模板静态文案复查仅保留图标“拾”和语言选项“中文”。单词本内容不作为界面消息翻译。
+- 语言独立存储在 `wordbook.locale`，测试确认读取已存英文、切换持久化、保存失败保持原语言，并且不改写单词本和恢复点。静态消息覆盖与插值保留测试通过。
+- Windows 菜单随选择切换，中文仅显示“帮助”、英文仅显示“Help”；侧栏版本号及设置页重复版本已移除，关于页仍显示版本和构建号。
+- 桌面实际验证重载语言、菜单同步、书库数据不变、英文备份比较、导入警告和空词条错误；Android 实际验证英文界面重启保持与切回中文。英文手机截图为 `dist/reports/android/screen-en.png`。
