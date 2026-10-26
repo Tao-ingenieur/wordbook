@@ -1,6 +1,6 @@
 export const keyOf = word => String(word ?? '').normalize('NFKC').trim().toLocaleLowerCase('en');
 const uid = () => globalThis.crypto?.randomUUID?.() || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
-export const defaultSettings = () => ({ theme: 'light', fontSize: 18, autoPronounce: false, repeat: 1, interval: 3, rate: 0.85 });
+const defaultSettings = () => ({ theme: 'light', fontSize: 18, autoPronounce: false, repeat: 1, interval: 3, rate: 0.85 });
 export const emptyState = () => ({ version: 1, books: [], settings: defaultSettings() });
 function cleanEntry(raw) {
   const word = String(raw.word ?? '').trim();

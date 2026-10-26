@@ -16,7 +16,7 @@ const output = platform === 'app' ? path.join(dist, '.cache/app-build/app') : fi
 if (platform !== 'mp-weixin') {
   const staticDir = path.join(repo, 'src/static');
   await fs.mkdir(staticDir, { recursive: true });
-  await fs.copyFile(require.resolve('pdfjs-dist/build/pdf.worker.min.mjs'), path.join(staticDir, 'pdf.worker.min.mjs'));
+  await fs.copyFile(require.resolve('pdfjs-dist/legacy/build/pdf.worker.min.mjs'), path.join(staticDir, 'pdf.worker.min.mjs'));
 }
 const cli = path.join(path.dirname(require.resolve('@dcloudio/vite-plugin-uni/package.json')), 'bin/uni.js');
 const args = dev ? ['-p', platform, '--host', '127.0.0.1'] : ['build', '-p', platform];
