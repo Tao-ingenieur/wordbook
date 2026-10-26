@@ -9,4 +9,4 @@
 - [开发与使用说明](repo/README.md)
 - [验证记录与平台限制](repo/VERIFICATION.md)
 
-Web、Windows 便携版及微信/App 资源已构建验证。移动端签名安装、真机测试及微信朗读插件授权仍待完成。
+Web、Windows 便携版及微信/App 资源已构建验证。Android 调试签名 APK 已生成，并通过 Android 35 / Pixel 6 模拟器启动、续背及文件对话框检查。iOS 签名打包、各移动端真机测试及微信朗读插件授权仍待完成。

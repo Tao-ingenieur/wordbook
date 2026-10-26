@@ -8,12 +8,17 @@
 - 微信小程序构建成功，输出 `dist/weixin`。
 - App 资源构建成功，输出 `dist/app`；这是原生打包资源，不是 APK/IPA。
 - Windows 便携文件夹已生成，入口为 `dist/desktop/Wordbook.exe`，无需安装；须保留同目录运行库。
+- Android 调试签名 APK 已生成并下载到 `dist/android/Wordbook-debug.apk`，SHA-256 与构建清单一致。源码提交 `25a2afa`，包名 `com.wordbook.app`，版本 `0.1.0`；构建来源及校验值在同目录 `build-info.json`、`SHA256SUMS.txt`。
 - `node --test --test-isolation=none tests/*.test.mjs`：25 项通过，含开发/发布路径一致性、测试数据隔离、续背、多本备份及 Android 导出桥接检查。
 - Electron 独立测试数据目录下冒烟检查：8 项通过，报告在 `dist/reports/desktop/desktop-smoke.json`，界面截图在 `dist/reports/desktop/desktop-preview.png`。
 
 桌面检查覆盖：preload 与 input 目录扫描、卡片翻转、隐藏后退出队列、恢复生词、Excel 解析和脏数据默认剔除、本地文件协议下双栏 PDF 的 Worker 解析。检查启用 CSP 后再次通过。
 
 续背验证：桌面离开再进入、切换排序、页面重载后恢复当前词与位置；模型检查每本两套进度独立、乱序队列持久化、隐藏/恢复/覆盖后的队列修复、显式重开、复制本进度独立以及旧备份兼容。三个单词本导出到一个 JSON 再合并导入空设备数据，确认仍为三个独立单词本且各自进度与隐藏状态保留。测试不读写用户的 `dist/data/`。
+
+Android 35 / Pixel 6 模拟器四项检查通过：[GitHub Actions 40252676582](https://github.com/Tao-ingenieur/wordbook/actions/runs/40252676582)。覆盖 APK 安装与内置资源启动、卡片显示、强制关闭再启动后的续背、原生 JSON 保存窗口及取消、文档选择器及取消返回。报告和截图下载到 `dist/reports/android/`。界面检查同时修复卡片无障碍标签未包含词条内容、Android 15 状态栏与页头重叠的问题。
+
+上述模拟器文件检查确认系统对话框及取消路径；完整文件写入/选取、PDF 解析和离线语音听音仍需在手机上进一步验收，不能等同于所有厂商设备已验证。共享解析器与备份往返逻辑已通过 Node / 桌面测试。
 
 目录整理后再次通过桌面检查。现有 `data/` 逐文件 SHA-256 与整理前一致；使用数据副本打开移动后的桌面资源，确认原有单词本与状态仍可读取。App 在 `.cache/` 内临时编译、发布到 `dist/app/` 的流程已实测通过。
 
