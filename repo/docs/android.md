@@ -44,6 +44,8 @@ Android 系统文件选择器可能提供网盘位置；选择远程文件的下
 
 Node 测试覆盖导出桥接的成功、取消、异常与并发结果匹配。CI 编译 Java 与共享网页资源；模拟器检查启动、卡片与进度。手机厂商文件提供器、系统语音包和真实听音仍需真机确认。
 
-当前 APK 对应源码 `25a2afa`，已通过 [Android 35 / Pixel 6 CI 检查](https://github.com/Tao-ingenieur/wordbook/actions/runs/40252676582)：安装启动、卡片显示、关闭重开续背、原生导出保存窗口和导入文件选择器的取消路径。文件实际读写、PDF 与离线听音仍待手机验收。
+当前 v0.2.0 APK 对应源码 `661cff3`，已通过 [Android 35 / Pixel 6 CI 十项检查](https://github.com/Tao-ingenieur/wordbook/actions/runs/40261666748)：固定签名及覆盖安装保留进度、旧版并存与 JSON 迁移、卡片和续背、左右滑动、新增搜索跳转、隐藏撤销、队尾停止、JSON 写入和重新读取恢复、真实文本 PDF 导入。文件与进度迁移已实际执行；厂商设备和离线听音仍待手机验收。
+
+Web/Android 使用 [PDF.js legacy 兼容构建](https://github.com/mozilla/pdf.js/wiki/Frequently-Asked-Questions)，主库与 Worker 保持同一版本，修复旧 WebView 缺少 `Promise.try` 时解析挂起的问题；解析超过两分钟会退出并提示拆分或更新 WebView。
 
 Gradle Wrapper 的脚本和 JAR 沿用已有 Sudoku 工程中的 Gradle 8.9 官方 Wrapper，保留 Apache-2.0 版权头。参考 [Gradle Wrapper](https://docs.gradle.org/8.9/userguide/gradle_wrapper.html)、[Android 本地 Web 内容](https://developer.android.com/develop/ui/views/layout/webapps/load-local-content)、[Android TextToSpeech](https://developer.android.com/reference/android/speech/tts/TextToSpeech)。

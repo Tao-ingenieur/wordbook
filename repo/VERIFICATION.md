@@ -8,17 +8,23 @@
 - 微信小程序构建成功，输出 `dist/weixin`。
 - App 资源构建成功，输出 `dist/app`；这是原生打包资源，不是 APK/IPA。
 - Windows 便携文件夹已生成，入口为 `dist/desktop/Wordbook.exe`，无需安装；须保留同目录运行库。
-- Android 调试签名 APK 已生成并下载到 `dist/android/Wordbook-debug.apk`，SHA-256 与构建清单一致。源码提交 `25a2afa`，包名 `com.wordbook.app`，版本 `0.1.0`；构建来源及校验值在同目录 `build-info.json`、`SHA256SUMS.txt`。
-- `node --test --test-isolation=none tests/*.test.mjs`：25 项通过，含开发/发布路径一致性、测试数据隔离、续背、多本备份及 Android 导出桥接检查。
-- Electron 独立测试数据目录下冒烟检查：8 项通过，报告在 `dist/reports/desktop/desktop-smoke.json`，界面截图在 `dist/reports/desktop/desktop-preview.png`。
+- Android 固定调试签名 APK 已生成并下载到 `dist/android/Wordbook-debug.apk`，SHA-256 与构建清单一致。源码提交 `661cff3`，包名 `com.wordbook.offline`，版本 `0.2.0` / versionCode 201；构建来源、签名证书摘要及校验值在同目录 `build-info.json`、`SHA256SUMS.txt`。
+- `node --test --test-isolation=none tests/*.test.mjs`：38 项通过，含开发/发布路径一致性、测试数据隔离、续背、词条编辑搜索、备份差异恢复、播放完成/取消和恢复点空间处理。
+- Electron 独立测试数据目录下冒烟检查：13 项通过，报告在 `dist/reports/desktop/desktop-smoke.json`，界面截图在 `dist/reports/desktop/desktop-preview.png`、`word-manager-preview.png`。
 
 桌面检查覆盖：preload 与 input 目录扫描、卡片翻转、隐藏后退出队列、恢复生词、Excel 解析和脏数据默认剔除、本地文件协议下双栏 PDF 的 Worker 解析。检查启用 CSP 后再次通过。
 
 续背验证：桌面离开再进入、切换排序、页面重载后恢复当前词与位置；模型检查每本两套进度独立、乱序队列持久化、隐藏/恢复/覆盖后的队列修复、显式重开、复制本进度独立以及旧备份兼容。三个单词本导出到一个 JSON 再合并导入空设备数据，确认仍为三个独立单词本且各自进度与隐藏状态保留。测试不读写用户的 `dist/data/`。
 
-Android 35 / Pixel 6 模拟器四项检查通过：[GitHub Actions 40252676582](https://github.com/Tao-ingenieur/wordbook/actions/runs/40252676582)。覆盖 APK 安装与内置资源启动、卡片显示、强制关闭再启动后的续背、原生 JSON 保存窗口及取消、文档选择器及取消返回。报告和截图下载到 `dist/reports/android/`。界面检查同时修复卡片无障碍标签未包含词条内容、Android 15 状态栏与页头重叠的问题。
+Android 35 / Pixel 6 模拟器十项检查通过：[GitHub Actions 40261666748](https://github.com/Tao-ingenieur/wordbook/actions/runs/40261666748)。覆盖固定签名验证及同包名覆盖安装保留进度、旧版并存和 JSON 迁移、安装启动与卡片显示、关闭重开续背、左右滑动、新增搜索跳转、撤销隐藏与队尾停止、JSON 实际写入 Downloads、选择 JSON 后比较恢复，以及真实文本 PDF 的本地解析与导入。报告、截图和测试 PDF 下载到 `dist/reports/android/`。
 
-上述模拟器文件检查确认系统对话框及取消路径；完整文件写入/选取、PDF 解析和离线语音听音仍需在手机上进一步验收，不能等同于所有厂商设备已验证。共享解析器与备份往返逻辑已通过 Node / 桌面测试。
+桌面补充检查覆盖连播完成回调与暂停、新增后按中文释义搜索、跳转、隐藏撤销、队尾不循环、键盘操作、编辑前恢复点、带导出时间的完整 JSON 与显式恢复选择；并断言新组件弹窗具有正确背景样式。播放逻辑使用可控发音回调测试，不替代实际听音。
+
+实际 Android PDF 导入发现旧 WebView 缺少 `Promise.try` 会挂起，已将浏览器主库和 Worker 同时改为 PDF.js 同版本 legacy 构建，并加入超时退出，桌面与 Android PDF 回归均通过。卡片无障碍标签和 Android 15 系统边距也已验证修复。
+
+Android 旧版 v0.1.0 的临时签名未实际缓存，密钥已无法恢复，不能覆盖安装。v0.2.0 更换为可并存的稳定包名，旧版数据保留，通过导出/导入 JSON 迁移。新版密钥密封后保存为 Actions Secret，已从 Secret 恢复并验证证书一致、覆盖安装数据保留。未把明文私钥放入源码或公共产物。
+
+模拟器完整读写及 PDF 通过，仍不能等同于所有厂商设备已验证；各手机的文件提供器与离线英文语音包、真实听音质量需真机确认。
 
 目录整理后再次通过桌面检查。现有 `data/` 逐文件 SHA-256 与整理前一致；使用数据副本打开移动后的桌面资源，确认原有单词本与状态仍可读取。App 在 `.cache/` 内临时编译、发布到 `dist/app/` 的流程已实测通过。
 
@@ -45,3 +51,5 @@ Android 35 / Pixel 6 模拟器四项检查通过：[GitHub Actions 40252676582](
 - 15 项测试、6 项独立桌面检查再次通过。桌面应用资源已同步，正在运行的旧窗口需重启后加载新资源。
 
 `node_modules/` 是安装依赖，生成的 PDF Worker 是构建资源，均已忽略 Git；`vendor/xlsx-0.20.3.tgz` 是安装清单引用的固定官方依赖包，不能作为重复源码删除。构建、迁移和验证脚本各有用途，予以保留。
+
+本轮新增代码复查扫描 40 个 JS/Vue 文件，未发现未使用绑定或未引用的命名导出。公共页面样式移至 `src/styles/app.css`，由 App 全局加载，词条管理与备份比较组件共用，避免 uni-app 页面的自动作用域导致子组件样式缺失。
