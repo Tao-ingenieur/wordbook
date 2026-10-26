@@ -45,6 +45,8 @@ dist/
 
 其他维护入口：`node scripts/create-sample.mjs` 生成含脏数据的导入示例；`./scripts/download-electron.ps1` 在常规安装下载受限时获取并校验 Electron 官方发行包（PowerShell 7）；`scripts/configure-weixin.mjs` 用于配置实际 AppID 和朗读插件。上述脚本不在每次启动时执行，但用于开发、迁移或发布，属于保留的维护工具。
 
+维护清理：`dist/.cache/` 和 `repo/.cache/` 是临时目录，关闭构建和测试后可以删除，后续按需重新生成；`reports/` 只需保留最新检查报告。Windows 打包完整替换 `desktop/resources/web/`，清除旧版本的哈希资源，不包含 Electron 默认示例应用。`node_modules/`、`vendor/`、Gradle Wrapper 与许可文件属于依赖或构建所需文件，应保留。清理不会移动或删除 `input/`、`data/`、`backups/`、`previews/`。
+
 ## 导入与更新规则
 
 - 一个 Excel/PDF 文件生成一本单词本。Excel 读取所有工作表，推荐表头 `单词、音标、释义、例句`，允许中英文表头和不同列顺序；无表头时按上述四列读取。CSV 也可使用。

@@ -47,9 +47,17 @@ Android 旧版 v0.1.0 的临时签名未实际缓存，密钥已无法恢复，�
 - 三处 Excel 读取统一为 `core/excel.mjs`；浏览器与 Node 共用 PDF 逐页文本提取和文档释放逻辑。
 - 删除 App 旧文件选择提示分支；按平台隔离文件选择处理函数和 iOS 语音实例；移除内部辅助函数的无用导出及 PDF 工具的转发导出。
 - 移除未使用的 `vue-i18n` 直接依赖及对应锁文件条目；uni-app 自身的国际化运行时继续由框架提供。依赖精简后 Web、微信和 App 均构建通过。
-- 微信导入 JSON 不再重复读取同一文件；一次性诊断/仓库设置脚本移至 `dist/.cache/maintenance-archive/`，未纳入 Git。
+- 微信导入 JSON 不再重复读取同一文件；一次性诊断/仓库设置脚本曾暂存 `dist/.cache/maintenance-archive/`，未纳入 Git，后续目录清理已删除。
 - 15 项测试、6 项独立桌面检查再次通过。桌面应用资源已同步，正在运行的旧窗口需重启后加载新资源。
 
 `node_modules/` 是安装依赖，生成的 PDF Worker 是构建资源，均已忽略 Git；`vendor/xlsx-0.20.3.tgz` 是安装清单引用的固定官方依赖包，不能作为重复源码删除。构建、迁移和验证脚本各有用途，予以保留。
 
 本轮新增代码复查扫描 40 个 JS/Vue 文件，未发现未使用绑定或未引用的命名导出。公共页面样式移至 `src/styles/app.css`，由 App 全局加载，词条管理与备份比较组件共用，避免 uni-app 页面的自动作用域导致子组件样式缺失。
+
+## 目录清理复核（2026-10-26）
+
+- 删除 `dist/.cache/` 内旧 APK、失败检查产物、下载压缩包、临时脚本和独立测试数据，以及空的 `repo/.cache/`。删除根目录未使用的 `.pnpm-store/`（实际依赖 store 位于 `D:\.pnpm-store\v11`）。
+- `reports/` 保留最新 Android、Windows 检查报告和截图，删除旧诊断报告、PDF 排版截图及测试生成的 PDF。
+- Windows 打包改为完整替换网页资源，删除累积的旧哈希文件，并排除 Electron 默认示例 `default_app.asar`；当前 Windows 包已按新规则重新生成。
+- 13 项隔离桌面检查通过；Windows 包内网页文件清单与内容逐项匹配 `dist/web/`，EXE 与依赖提供的 Electron 运行时哈希相同。
+- 清理前后逐文件 SHA-256 核对：`input/`、`data/`、`backups/`、`previews/`、`android/`、`web/`、`app/`、`weixin/` 全部一致。源码依赖、固定 vendor 包、Gradle Wrapper、许可证及各平台当前产物保留。

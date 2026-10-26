@@ -12,8 +12,10 @@
 | `backups/` | 手动导出 JSON 的默认位置，可在保存窗口改到其他目录。 |
 | `previews/` | 源文件解析预览 JSON。 |
 | `reports/` | 检查报告、调试截图等验证产物。 |
-| `.cache/` | 下载、临时构建和独立测试数据。 |
+| `.cache/` | 下载、临时构建和独立测试数据，按需生成，关闭构建和测试后可删除。 |
 
 程序文件与个人资料分开存放。更新 Windows 程序只需更新 `desktop/`，保留 `data/`。迁移整套个人环境时，复制 `desktop/`、`data/` 和需要的 `input/`；对外分发仅复制 `desktop/`，不附带个人资料。
 
 整个 `dist/` 均不会上传 GitHub。目录与脚本说明见源码中的 `repo/README.md`。
+
+清理时保留各平台当前产物与 `input/`、`data/`、`backups/`、`previews/`。`reports/` 保留最新检查报告即可。Windows 打包会替换 `desktop/resources/web/`，自动清除旧版本网页资源。

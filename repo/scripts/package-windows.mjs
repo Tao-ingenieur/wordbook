@@ -12,7 +12,11 @@ await fs.access(path.join(dist, 'web/index.html'));
 await fs.access(path.join(electronDir, 'electron.exe'));
 await fs.mkdir(output, { recursive: true });
 // 只更新 desktop 中的程序；用户 input、data 和 backups 均位于上一级。
-await fs.cp(electronDir, output, { recursive: true });
+await fs.cp(electronDir, output, {
+  recursive: true,
+  filter: source => source !== path.join(electronDir, 'resources/default_app.asar')
+});
+await fs.rm(path.join(output, 'resources/default_app.asar'), { force: true });
 await fs.copyFile(path.join(output, 'electron.exe'), path.join(output, 'Wordbook.exe'));
 await fs.unlink(path.join(output, 'electron.exe'));
 const appDir = path.join(output, 'resources/app');
@@ -20,7 +24,11 @@ await fs.mkdir(appDir, { recursive: true });
 await fs.cp(path.join(repo, 'electron'), path.join(appDir, 'electron'), { recursive: true });
 const pkg = JSON.parse(await fs.readFile(path.join(repo, 'package.json'), 'utf8'));
 await fs.writeFile(path.join(appDir, 'package.json'), JSON.stringify({ name: 'wordbook', version: pkg.version, main: 'electron/main.cjs' }, null, 2));
-await fs.cp(path.join(dist, 'web'), path.join(output, 'resources/web'), { recursive: true });
+// 完整替换网页目录，避免多次构建后旧的哈希资源一直累积。
+const packagedWeb = path.resolve(output, 'resources/web');
+if (path.dirname(packagedWeb) !== path.join(dist, 'desktop/resources') || path.basename(packagedWeb) !== 'web') throw Error('Windows 网页资源路径异常');
+await fs.rm(packagedWeb, { recursive: true, force: true });
+await fs.cp(path.join(dist, 'web'), packagedWeb, { recursive: true });
 await fs.mkdir(path.join(dist, 'input'), { recursive: true });
 await fs.mkdir(path.join(dist, 'backups'), { recursive: true });
 await fs.copyFile(path.join(repo, 'scripts/dist-layout.md'), path.join(dist, 'README.md'));
