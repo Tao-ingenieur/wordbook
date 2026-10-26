@@ -76,7 +76,9 @@ try:
     previous = json.loads((baseline.parent / 'build-info.json').read_text()) if baseline.exists() else {'package': package}
     old_package = previous['package']
     old_component = old_package + '/com.wordbook.app.MainActivity'
-    adb('install', '-r', str(baseline if baseline.exists() else root / 'dist/android/Wordbook-debug.apk'))
+    # This second scenario resets a disposable emulator to an older debug fixture.
+    # Allow that fixture downgrade; the actual upgrade above/below never uses -d.
+    adb('install', '-r', '-d', str(baseline if baseline.exists() else root / 'dist/android/Wordbook-debug.apk'))
     adb('shell', 'pm', 'clear', old_package)
     adb('shell', 'am', 'start', '-n', old_component)
     find('先用示例体验', True)
