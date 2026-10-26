@@ -8,15 +8,15 @@
 - 微信小程序构建成功，输出 `dist/weixin`。
 - App 资源构建成功，输出 `dist/app`；这是原生打包资源，不是 APK/IPA。
 - Windows 便携文件夹已生成，入口为 `dist/desktop/Wordbook.exe`，无需安装；须保留同目录运行库。
-- Android 固定调试签名 APK 已生成并下载到 `dist/android/Wordbook-debug.apk`，SHA-256 与构建清单一致。源码提交 `661cff3`，包名 `com.wordbook.offline`，版本 `0.2.0` / versionCode 201；构建来源、签名证书摘要及校验值在同目录 `build-info.json`、`SHA256SUMS.txt`。
+- Android 固定调试签名 APK 已生成并下载到 `dist/android/Wordbook-debug.apk`，SHA-256 与构建清单一致。源码提交 `c7f31bf`，包名 `com.wordbook.offline`，版本 `0.2.1` / versionCode 202；构建来源、签名证书摘要及校验值在同目录 `build-info.json`、`SHA256SUMS.txt`。
 - `node --test --test-isolation=none tests/*.test.mjs`：38 项通过，含开发/发布路径一致性、测试数据隔离、续背、词条编辑搜索、备份差异恢复、播放完成/取消和恢复点空间处理。
-- Electron 独立测试数据目录下冒烟检查：13 项通过，报告在 `dist/reports/desktop/desktop-smoke.json`，界面截图在 `dist/reports/desktop/desktop-preview.png`、`word-manager-preview.png`。
+- Electron 独立测试数据目录下冒烟检查：15 项通过，报告在 `dist/reports/desktop/desktop-smoke.json`，界面截图在 `dist/reports/desktop/desktop-preview.png`、`word-manager-preview.png`、`about-desktop.png`、`about-mobile.png`。
 
 桌面检查覆盖：preload 与 input 目录扫描、卡片翻转、隐藏后退出队列、恢复生词、Excel 解析和脏数据默认剔除、本地文件协议下双栏 PDF 的 Worker 解析。检查启用 CSP 后再次通过。
 
 续背验证：桌面离开再进入、切换排序、页面重载后恢复当前词与位置；模型检查每本两套进度独立、乱序队列持久化、隐藏/恢复/覆盖后的队列修复、显式重开、复制本进度独立以及旧备份兼容。三个单词本导出到一个 JSON 再合并导入空设备数据，确认仍为三个独立单词本且各自进度与隐藏状态保留。测试不读写用户的 `dist/data/`。
 
-Android 35 / Pixel 6 模拟器十项检查通过：[GitHub Actions 40261666748](https://github.com/Tao-ingenieur/wordbook/actions/runs/40261666748)。覆盖固定签名验证及同包名覆盖安装保留进度、旧版并存和 JSON 迁移、安装启动与卡片显示、关闭重开续背、左右滑动、新增搜索跳转、撤销隐藏与队尾停止、JSON 实际写入 Downloads、选择 JSON 后比较恢复，以及真实文本 PDF 的本地解析与导入。报告、截图和测试 PDF 下载到 `dist/reports/android/`。
+Android 35 / Pixel 6 模拟器十一项检查通过：[GitHub Actions 40275048102](https://github.com/Tao-ingenieur/wordbook/actions/runs/40275048102)。覆盖固定签名及覆盖安装保留进度、安装启动与卡片显示、关闭重开续背、左右滑动、新增搜索跳转、撤销隐藏与队尾停止、JSON 实际写入 Downloads、选择 JSON 后比较恢复、真实文本 PDF 导入，以及帮助页版本/构建号与 Android 安装信息一致。报告和截图下载到 `dist/reports/android/`；旧包名并存和 JSON 迁移已在 v0.2.0 验证。
 
 桌面补充检查覆盖连播完成回调与暂停、新增后按中文释义搜索、跳转、隐藏撤销、队尾不循环、键盘操作、编辑前恢复点、带导出时间的完整 JSON 与显式恢复选择；并断言新组件弹窗具有正确背景样式。播放逻辑使用可控发音回调测试，不替代实际听音。
 
