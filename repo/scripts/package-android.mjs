@@ -37,13 +37,14 @@ const signer = await certificate(apk);
 const baseline = path.join(dist, '.cache/android-baseline/Wordbook-debug.apk');
 try {
   await fs.access(baseline);
-  if (signer !== await certificate(baseline)) throw Error('Signing identity differs from the installed APK. Restore the existing signing key; do not uninstall or silently rotate the key.');
+  const previous = JSON.parse(await fs.readFile(path.join(path.dirname(baseline), 'build-info.json'), 'utf8'));
+  if (previous.package === 'com.wordbook.offline' && signer !== await certificate(baseline)) throw Error('Signing identity differs from the installed APK. Restore the existing signing key; do not uninstall or silently rotate the key.');
 } catch (error) { if (error.code !== 'ENOENT') throw error; }
 const hash = createHash('sha256').update(await fs.readFile(apk)).digest('hex');
 await fs.writeFile(path.join(output, 'SHA256SUMS.txt'), `${hash}  Wordbook-debug.apk\n`);
 await fs.writeFile(path.join(output, 'build-info.json'), JSON.stringify({
   sourceCommit: process.env.GITHUB_SHA || null, buildRun: process.env.GITHUB_RUN_ID || null,
-  package: 'com.wordbook.app', version: '0.2.0', signing: 'persistent-debug', signingCertificateSha256: signer, sha256: hash,
+  package: 'com.wordbook.offline', version: '0.2.0', signing: 'persistent-debug', signingCertificateSha256: signer, sha256: hash,
   builtAt: new Date().toISOString()
 }, null, 2));
 console.log(`Android debug APK: ${apk}\nSHA256: ${hash}`);

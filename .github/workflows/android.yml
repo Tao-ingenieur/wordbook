@@ -36,7 +36,7 @@ jobs:
         env:
           ANDROID_SIGNING_KEYSTORE: ${{ secrets.ANDROID_SIGNING_KEYSTORE }}
         run: |
-          node --input-type=module -e "import fs from 'node:fs';import os from 'node:os';import path from 'node:path';const p=path.join(os.homedir(),'.android/debug.keystore');if(process.env.ANDROID_SIGNING_KEYSTORE){fs.mkdirSync(path.dirname(p),{recursive:true});fs.writeFileSync(p,Buffer.from(process.env.ANDROID_SIGNING_KEYSTORE,'base64'),{mode:0o600});}if(!fs.existsSync(p))throw Error('Existing signing key missing. Restore it before building an update.');"
+          node --input-type=module -e "import fs from 'node:fs';import os from 'node:os';import path from 'node:path';import{execFileSync}from'node:child_process';const p=path.join(os.homedir(),'.android/debug.keystore');fs.mkdirSync(path.dirname(p),{recursive:true});if(process.env.ANDROID_SIGNING_KEYSTORE){fs.writeFileSync(p,Buffer.from(process.env.ANDROID_SIGNING_KEYSTORE,'base64'),{mode:0o600});}else if(!fs.existsSync(p)){execFileSync('keytool',['-genkeypair','-noprompt','-storetype','JKS','-keystore',p,'-storepass','android','-keypass','android','-alias','androiddebugkey','-dname','CN=Wordbook,O=Wordbook,C=CN','-keyalg','RSA','-keysize','2048','-validity','10000'],{stdio:'inherit'});}"
       - name: Download upgrade baseline
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -74,7 +74,8 @@ jobs:
           path: dist/reports/android/
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: wordbook-signing-recovery
           path: dist/.cache/signing-recovery/signing-secret.json
-          if-no-files-found: error
+          if-no-files-found: ignore

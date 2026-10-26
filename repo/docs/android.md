@@ -4,7 +4,7 @@ Android 使用独立 Java WebView 壳复用 `dist/web`，由 Gradle 打包，不
 
 ## 本机打包
 
-需要 Node.js 24、pnpm 10、JDK 17、Android SDK Platform 35 和 Build Tools 35.0.0；接受 Android SDK 许可并设置 `JAVA_HOME`、`ANDROID_HOME`（或在 Android 工程的本地 `local.properties` 配置 `sdk.dir`）。在 `repo/` 执行：
+需要 Node.js 24、pnpm 10、JDK 17、Android SDK Platform 35 和 Build Tools 35.0.0；接受 Android SDK 许可并设置 `JAVA_HOME`、`ANDROID_HOME`（或 `ANDROID_SDK_ROOT`，供构建和签名验证定位 SDK）。在 `repo/` 执行：
 
 ```powershell
 pnpm install --frozen-lockfile
@@ -20,13 +20,15 @@ pnpm package:android
 
 GitHub Actions 的 **Android APK** 工作流在 main 推送后自动构建；完成后在该次运行的 Artifacts 下载 `wordbook-android`。构建不读取个人 `dist/input`、`dist/data` 或备份。
 
-v0.2.0 延用 v0.1.0 的签名身份，以便覆盖安装并保留数据。CI 优先从仓库 Actions Secret `ANDROID_SIGNING_KEYSTORE` 恢复固定签名，不依赖缓存长期保留；首次迁移从已有缓存恢复，使用仓库公开加密密钥密封后写入 Secret，源码和公共产物中不存明文密钥。构建用 `apksigner` 验证签名并与上一份成功 APK 的证书比较，证书不同会中止；模拟器先安装旧版并背到指定单词，再覆盖安装新版检查数据保留。版本号为 `0.2.0` / `versionCode 200`，仍是供侧载的调试签名包，不是商店正式签名发布。
+旧版 v0.1.0（包名 `com.wordbook.app`）的签名缓存配置未实际保存密钥，临时 runner 退出后密钥已丢失，因此不能直接覆盖安装。v0.2.0 使用稳定包名 `com.wordbook.offline`，应用名“拾词单词本”，可与旧版“拾词”并存，不删除旧版或旧版数据。请在旧版导出全部 JSON，再在新版导入并确认单词本和进度正确；确认迁移完成后再自行处理旧版。
+
+从 v0.2.0 起，CI 优先从仓库 Actions Secret `ANDROID_SIGNING_KEYSTORE` 恢复固定签名，不依赖缓存长期保留；首次生成的签名使用仓库公开加密密钥密封后写入 Secret，源码和公共产物中不存明文密钥。构建用 `apksigner` 验证签名；与同包名上一份成功 APK 的证书不同会中止。模拟器对旧包名验证并存及 JSON 迁移，对同包名验证覆盖安装后的数据保留。版本号为 `0.2.0` / `versionCode 200`，仍是供侧载的调试签名包，不是商店正式签名发布。
 
 本机自行打包的默认调试密钥可能不同，不能拿它覆盖 CI 版本。不要为解决签名不匹配而直接卸载有数据的应用；先导出数据、恢复原签名，或明确安排迁移。后续版本需递增 `versionCode`；如果上次构建的基线 artifact 已过期，应恢复保留的旧 APK 后再验证升级。
 
 ## 安装和使用
 
-Android 7.0+，需要较新的 Android System WebView / Chrome；旧系统自带的过时 WebView 可能不支持当前 PDF 解析器。将 APK 传到手机，允许对应文件管理器“安装未知应用”，点击安装。应用名为“拾词”，包名 `com.wordbook.app`。
+Android 7.0+，需要较新的 Android System WebView / Chrome；旧系统自带的过时 WebView 可能不支持当前 PDF 解析器。将 APK 传到手机，允许对应文件管理器“安装未知应用”，点击安装。应用名为“拾词单词本”，包名 `com.wordbook.offline`。
 
 应用资源全部内置，通过固定的本地 HTTPS 来源提供给 WebView，实际从 APK assets 读取，不访问网站。不申请联网或存储全盘访问权限。单词本、隐藏状态、两套背诵进度保存在此应用的本地存储；卸载和清除应用数据会删除这些内容。
 

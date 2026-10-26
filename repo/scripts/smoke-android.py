@@ -57,22 +57,39 @@ def activity(package):
     raise AssertionError('Android activity not resumed: ' + package)
 
 checks = []
+package = 'com.wordbook.offline'
+component = package + '/com.wordbook.app.MainActivity'
 try:
     baseline = root / 'dist/.cache/android-baseline/Wordbook-debug.apk'
+    previous = json.loads((baseline.parent / 'build-info.json').read_text()) if baseline.exists() else {'package': package}
+    old_package = previous['package']
+    old_component = old_package + '/com.wordbook.app.MainActivity'
     adb('install', '-r', str(baseline if baseline.exists() else root / 'dist/android/Wordbook-debug.apk'))
-    adb('shell', 'pm', 'clear', 'com.wordbook.app')
-    adb('shell', 'am', 'start', '-n', 'com.wordbook.app/.MainActivity')
+    adb('shell', 'pm', 'clear', old_package)
+    adb('shell', 'am', 'start', '-n', old_component)
     find('先用示例体验', True)
     find('开始背诵', True)
     find('bloom')
     checks.append('APK offline assets and Android bridge initialize; demo card renders')
     find('下一个', True)
     find('curiosity')
-    adb('shell', 'am', 'force-stop', 'com.wordbook.app')
+    if old_package != package:
+        find('基础设置', True); find('导出全部数据', True); activity('documentsui')
+        find('wordbook-backup.json', True)
+        adb('shell', 'input', 'keycombination', '113', '29')
+        adb('shell', 'input', 'text', 'wordbook-legacy.json')
+        adb('shell', 'input', 'keyevent', '4')
+        find('Save', True, exact=True); activity(old_package)
+    adb('shell', 'am', 'force-stop', old_package)
     if baseline.exists():
         adb('install', '-r', str(root / 'dist/android/Wordbook-debug.apk'))
-        checks.append('In-place upgrade keeps the same signing identity and existing app data')
-    adb('shell', 'am', 'start', '-n', 'com.wordbook.app/.MainActivity')
+        if old_package == package: checks.append('In-place upgrade keeps the same signing identity and existing app data')
+    adb('shell', 'am', 'start', '-n', component)
+    if old_package != package:
+        find('导入单词本', True); find('选择文件', True); activity('documentsui'); find('wordbook-legacy.json', True)
+        activity(package); find('备份差异与恢复'); find('确认所选恢复方式', True)
+        assert adb('shell', 'pm', 'path', old_package).strip()
+        checks.append('Legacy app remains installed; manual JSON migration restores its books and progress')
     find('继续背诵', True)
     find('curiosity')
     checks.append('Study position survives force-stop and relaunch')
@@ -107,7 +124,7 @@ try:
     activity('documentsui')
     find('wordbook-backup.json')
     find('Save', True, exact=True)
-    activity('com.wordbook.app')
+    activity(package)
     find('数据与备份')
     saved = json.loads(adb('exec-out', 'cat', '/sdcard/Download/wordbook-backup.json'))
     assert any(e['word'] == 'zoology' for book in saved['books'] for e in book['entries'])
@@ -116,7 +133,7 @@ try:
     find('选择文件', True)
     activity('documentsui')
     find('wordbook-backup.json', True)
-    activity('com.wordbook.app')
+    activity(package)
     find('备份差异与恢复')
     find('使用备份覆盖', True)
     find('确认所选恢复方式', True)
@@ -140,7 +157,7 @@ try:
     try: find('wordbook-native.pdf', True, timeout=6)
     except AssertionError:
         find('Show roots', True); find('Downloads', True, exact=True); find('wordbook-native.pdf', True)
-    activity('com.wordbook.app'); find('检查导入内容'); find('androidpdfword')
+    activity(package); find('检查导入内容'); find('androidpdfword')
     find('创建单词本', True)
     checks.append('Android imports an actual text PDF using its embedded local PDF Worker')
     (report / 'screen.png').write_bytes(adb('exec-out', 'screencap', '-p'))
